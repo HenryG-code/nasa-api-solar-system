@@ -48,6 +48,22 @@ test.describe("live ISS hero", () => {
     await expect(page.locator(".hero-video")).toHaveCSS("opacity", "1", { timeout: 4000 });
   });
 
+  test("reduced motion: Play live is disabled until the stream plays", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+
+    const button = page.locator("#soundToggle");
+    await expect(button).toBeVisible();
+    await expect(button).toHaveText(/Play live/);
+    await expect(page.locator("#heroVideo iframe")).toHaveCount(0);
+
+    await button.click();
+    await expect(page.locator("#heroVideo iframe")).toHaveCount(1);
+    // No sound toggling until the player reports that it is playing.
+    await expect(button).toBeDisabled();
+    await expect(button).toHaveText(/Starting/);
+  });
+
   test("Sound control stays hidden until the stream is actually playing", async ({ page }) => {
     await page.goto("/");
 
