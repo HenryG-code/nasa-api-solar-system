@@ -67,6 +67,8 @@ npm run test:ui                   # interactive runner
 npm run test:report               # open the last HTML report
 ```
 
+GitHub Actions runs the suite on every push and pull request (`.github/workflows/tests.yml`). A daily job (`live-check.yml`) tests the deployed site; if it fails it opens an issue labelled `live-site-failure`, and closes it automatically once the site passes again.
+
 | Spec | Covers |
 | --- | --- |
 | `smoke.spec.js` | Page loads with no script errors, no sideways scrolling, nav links, skip link, versioned assets |
