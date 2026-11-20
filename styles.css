@@ -901,6 +901,7 @@ h3 {
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.06),
     0 0 22px var(--planet-glow);
+  scale: var(--depth-scale, 1);
   transition: transform 260ms var(--ease), box-shadow 260ms var(--ease);
 }
 
@@ -951,7 +952,15 @@ h3 {
   text-align: left;
   transform: translate(var(--label-x), var(--label-y));
   pointer-events: none;
-  transition: border-color 220ms ease, background 220ms ease;
+  /* When planets pass each other a label changes side; glide, don't jump. */
+  transition:
+    transform 600ms var(--ease),
+    border-color 220ms ease,
+    background 220ms ease;
+}
+
+.map-node.is-label-hidden .map-node__label {
+  visibility: hidden;
 }
 
 .map-node__label strong,
@@ -975,6 +984,16 @@ h3 {
   letter-spacing: 0.08em;
   line-height: 1.15;
   text-transform: uppercase;
+}
+
+.map-node__order {
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.map-node.is-active .map-node__order,
+.map-node:hover .map-node__order {
+  color: var(--text);
 }
 
 .map-node:hover .map-node__body,
@@ -1036,6 +1055,10 @@ h3 {
   flex: none;
 }
 
+.hud-status .map-legend {
+  color: rgba(255, 255, 255, 0.36);
+}
+
 .hud-status span {
   color: var(--faint);
   font-family: var(--condensed);
@@ -1083,6 +1106,15 @@ h3 {
   height: 8px;
   border-radius: 50%;
   background: var(--chip-color);
+}
+
+.rail-order {
+  color: rgba(255, 255, 255, 0.36);
+  font-variant-numeric: tabular-nums;
+}
+
+.rail-chip[aria-pressed="true"] .rail-order {
+  color: var(--faint);
 }
 
 .rail-chip:hover {
@@ -1588,8 +1620,22 @@ h3 {
   }
 
   .map-node__label {
-    max-width: min(132px, 42vw);
+    max-width: min(150px, 46vw);
     padding: 0.35rem 0.5rem;
+  }
+
+  .map-node:not(.is-active) .map-node__label {
+    padding: 0.2rem 0.4rem;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .map-node:not(.is-active) .map-node__label small,
+  .map-node:not(.is-active) .map-node__order ~ .map-node__name {
+    display: none;
+  }
+
+  .hud-status .map-legend {
+    display: none;
   }
 
   .map-node__label strong {

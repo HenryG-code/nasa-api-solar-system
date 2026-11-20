@@ -40,33 +40,6 @@ const GENERIC_PENALTY_TERMS = [
   "history of",
 ];
 
-const SOLAR_SYSTEM_REFERENCE = {
-  x: 0.5,
-  y: 0.5,
-  orbitTilt: 0.33,
-};
-
-const SOLAR_DISPLAY_ARC = {
-  start: 186,
-  end: -38,
-  rotationSpeed: 0.0000032,
-};
-
-const MAP_LABEL_CONFIG = {
-  desktop: {
-    bottomSafeArea: 130,
-    labelHeight: 56,
-    labelWidth: 148,
-    padding: 18,
-  },
-  mobile: {
-    bottomSafeArea: 162,
-    labelHeight: 50,
-    labelWidth: 128,
-    padding: 12,
-  },
-};
-
 const GENERIC_EXCLUDED_TERMS = [
   "astronaut",
   "spacesuit",
@@ -95,13 +68,9 @@ const nodeDefinitions = [
     kicker: "Sun-scorched world",
     queries: ["Mercury MESSENGER", "Mercury planet"],
     description: "Scorched cliffs and shadowed craters closest to the Sun.",
-    orbit: 0.11,
-    angle: -58,
-    orbitSpeed: 0.00002,
-    size: 14,
+    au: 0.39,
+    size: 9,
     color: "#b8ac97",
-    labelDx: 18,
-    labelDy: -72,
     preferredTerms: ["mercury", "planet", "surface", "mosaic", "crater", "global", "messenger"],
     excludedTerms: ["mercury program", "mercury-redstone", "mercury-atlas", "freedom 7", "friendship 7"],
   },
@@ -111,13 +80,9 @@ const nodeDefinitions = [
     kicker: "Cloud-shrouded",
     queries: ["Venus planet", "Venus Magellan"],
     description: "Sulfur clouds conceal a volcanic world glowing with trapped heat.",
-    orbit: 0.17,
-    angle: 20,
-    orbitSpeed: 0.000014,
-    size: 18,
+    au: 0.72,
+    size: 13,
     color: "#d7be93",
-    labelDx: -156,
-    labelDy: 10,
     preferredTerms: ["venus", "planet", "cloud", "global", "hemisphere", "ultraviolet", "magellan", "radar"],
     excludedTerms: ["transit"],
   },
@@ -127,13 +92,9 @@ const nodeDefinitions = [
     kicker: "Blue marble",
     queries: ["blue marble", "Earth from space", "Earth globe"],
     description: "Our ocean world with weather bands, auroras, and the blue marble view.",
-    orbit: 0.24,
-    angle: -12,
-    orbitSpeed: 0.00001,
-    size: 21,
+    au: 1,
+    size: 14,
     color: "#4fbfff",
-    labelDx: 20,
-    labelDy: -76,
     preferredTerms: ["earth", "blue marble", "planet", "globe", "clouds", "aurora"],
     excludedTerms: ["iss", "international space station", "spacesuit", "spacewalk"],
   },
@@ -144,13 +105,9 @@ const nodeDefinitions = [
     queries: ["full moon", "Moon lunar"],
     description: "Lunar maria, crater rims, and the silver quiet of our nearest world.",
     parentId: "earth",
-    orbit: 0.024,
-    angle: 54,
-    orbitSpeed: 0.000055,
-    size: 10,
+    distance: "Earth's moon",
+    size: 6,
     color: "#d7d8d6",
-    labelDx: 16,
-    labelDy: 18,
     preferredTerms: ["moon", "lunar", "surface", "mosaic", "crater", "orbit"],
     excludedTerms: ["apollo", "astronaut", "lander", "flag", "footprint", "rover"],
   },
@@ -160,13 +117,9 @@ const nodeDefinitions = [
     kicker: "Red planet",
     queries: ["Mars global", "Mars Hubble", "Mars planet"],
     description: "Rust-red deserts, canyon walls, and dust plains stretching across ancient ground.",
-    orbit: 0.34,
-    angle: 32,
-    orbitSpeed: 0.000008,
-    size: 17,
+    au: 1.52,
+    size: 11,
     color: "#d9714d",
-    labelDx: 22,
-    labelDy: 18,
     preferredTerms: ["mars", "planet", "global", "hubble", "hemisphere", "full disk", "color", "valles marineris", "olympus mons"],
     excludedTerms: [
       "rover",
@@ -188,13 +141,9 @@ const nodeDefinitions = [
     kicker: "Gas giant",
     queries: ["Jupiter Juno", "Jupiter planet"],
     description: "The striped giant of storms, lightning, and immense polar cyclones.",
-    orbit: 0.49,
-    angle: -30,
-    orbitSpeed: 0.000004,
-    size: 37,
+    au: 5.2,
+    size: 30,
     color: "#d8ab87",
-    labelDx: 22,
-    labelDy: -48,
     preferredTerms: ["jupiter", "planet", "storm", "great red spot", "cloud", "global"],
   },
   {
@@ -203,15 +152,22 @@ const nodeDefinitions = [
     kicker: "Ringed world",
     queries: ["Saturn Cassini", "Saturn rings"],
     description: "Rings, storms, and golden cloud belts spread across the outer system.",
-    orbit: 0.63,
-    angle: 12,
-    orbitSpeed: 0.0000027,
-    size: 30,
+    au: 9.58,
+    size: 25,
     color: "#d8c690",
-    labelDx: 28,
-    labelDy: -46,
     hasRings: true,
     preferredTerms: ["saturn", "planet", "rings", "cloud", "global", "cassini"],
+  },
+  {
+    id: "uranus",
+    title: "Uranus",
+    kicker: "Tilted ice giant",
+    queries: ["Uranus Voyager", "Uranus planet"],
+    description: "A pale cyan world rolling on its side, wrapped in methane haze and faint rings.",
+    au: 19.2,
+    size: 18,
+    color: "#9fe3e6",
+    preferredTerms: ["uranus", "planet", "voyager", "rings", "ice giant", "methane"],
   },
   {
     id: "neptune",
@@ -219,13 +175,9 @@ const nodeDefinitions = [
     kicker: "Ice giant",
     queries: ["Neptune Voyager", "Neptune"],
     description: "Blue high-speed winds roll at the edge of the known planetary family.",
-    orbit: 0.79,
-    angle: -10,
-    orbitSpeed: 0.0000015,
-    size: 24,
+    au: 30.05,
+    size: 18,
     color: "#6e9fff",
-    labelDx: -162,
-    labelDy: -32,
     preferredTerms: ["neptune", "planet", "blue", "storm", "global", "voyager"],
   },
   {
@@ -234,13 +186,10 @@ const nodeDefinitions = [
     kicker: "Deep sky",
     queries: ["Orion Nebula", "Orion Nebula Hubble"],
     description: "A luminous stellar nursery far beyond the planets, alive with newborn stars.",
-    mapX: 0.12,
-    mapY: 0.36,
-    size: 16,
+    corner: [-1, -1],
+    distance: "1,344 light-years",
+    size: 12,
     color: "#8fe9ff",
-    labelDx: -166,
-    labelDy: -18,
-    labelWidth: 164,
     realm: "deep",
     preferredTerms: ["orion nebula", "nebula", "hubble", "stars", "gas", "dust"],
     requiredTerms: ["orion nebula", "m42", "m43"],
@@ -251,13 +200,10 @@ const nodeDefinitions = [
     kicker: "Deep sky",
     queries: ["Pillars of Creation", "Eagle Nebula"],
     description: "Towering columns of dust and gas sculpted by radiation in the Eagle Nebula.",
-    mapX: 0.88,
-    mapY: 0.36,
-    size: 14,
+    corner: [1, -1],
+    distance: "6,500 light-years",
+    size: 12,
     color: "#ffe0aa",
-    labelDx: -86,
-    labelDy: -78,
-    labelWidth: 176,
     realm: "deep",
     preferredTerms: ["pillars of creation", "eagle nebula", "nebula", "dust", "stars"],
     requiredTerms: ["pillars", "eagle nebula", "m16"],
@@ -268,13 +214,10 @@ const nodeDefinitions = [
     kicker: "Deep sky",
     queries: ["Andromeda galaxy", "Andromeda", "M31"],
     description: "A spiral galaxy of billions of stars glowing beyond the edge of our solar neighborhood.",
-    mapX: 0.86,
-    mapY: 0.62,
-    size: 15,
+    corner: [1, 1],
+    distance: "2.5M light-years",
+    size: 12,
     color: "#adc3ff",
-    labelDx: -178,
-    labelDy: -24,
-    labelWidth: 170,
     realm: "deep",
     preferredTerms: ["andromeda", "galaxy", "spiral", "stars", "deep space"],
     requiredTerms: ["andromeda", "m31"],
@@ -293,6 +236,8 @@ const state = {
   galleryLoading: false,
   galleryRequestId: 0,
   dialogIndex: -1,
+  hoverNodeId: null,
+  mapSafe: null,
   animationTime: 0,
   labelLayouts: new Map(),
   solarLayout: null,
@@ -353,6 +298,7 @@ const starState = {
   animationFrame: 0,
   stars: [],
   asteroidBelt: [],
+  kuiperBelt: [],
   dpr: Math.min(window.devicePixelRatio || 1, 2),
   width: 0,
   height: 0,
@@ -388,7 +334,7 @@ function initializeDestinationRail() {
           ? '<span class="rail-divider" aria-hidden="true"></span>'
           : "";
 
-      return `${divider}<button class="rail-chip" type="button" data-node-id="${node.id}" aria-pressed="false" style="--chip-color:${node.color}">${escapeHtml(node.title)}</button>`;
+      return `${divider}<button class="rail-chip" type="button" data-node-id="${node.id}" aria-pressed="false" style="--chip-color:${node.color}">${planetOrder(node) ? `<span class="rail-order">${planetOrder(node)}</span>` : ""}${escapeHtml(node.title)}</button>`;
     })
     .join("");
 
@@ -422,6 +368,7 @@ function renderMapNodes() {
       const activeClass = node.id === state.selectedNode.id ? " is-active" : "";
       const ringClass = node.hasRings ? " map-node--ringed" : "";
       const deepClass = node.realm === "deep" ? " map-node--deep-space" : "";
+      const order = planetOrder(node);
 
       return `
         <button
@@ -431,16 +378,14 @@ function renderMapNodes() {
           style="
             --planet-size:${node.size}px;
             --planet-color:${node.color};
-            --planet-glow:${hexToRgba(node.color, 0.52)};
-            --label-x:${node.labelDx}px;
-            --label-y:${node.labelDy}px;
-            --label-width:${node.labelWidth || MAP_LABEL_CONFIG.desktop.labelWidth}px;
+            --planet-glow:${hexToRgba(node.color, 0.5)};
           "
+          aria-label="${escapeAttribute(`${node.title}, ${labelText(node).detail}`)}"
         >
           <span class="map-node__body" aria-hidden="true"></span>
-          <span class="map-node__label">
-            <strong>${escapeHtml(node.title)}</strong>
-            <small>${escapeHtml(node.kicker)}</small>
+          <span class="map-node__label" aria-hidden="true">
+            <strong>${order ? `<span class="map-node__order">${order}</span> ` : ""}<span class="map-node__name">${escapeHtml(node.title)}</span></strong>
+            <small>${escapeHtml(labelText(node).detail)}</small>
           </span>
         </button>
       `;
@@ -461,9 +406,54 @@ function renderMapNodes() {
 
       selectNode(selectedNode);
     });
+
+    const hover = (id) => () => {
+      state.hoverNodeId = id;
+    };
+
+    mapNode.addEventListener("pointerenter", hover(mapNode.dataset.nodeId));
+    mapNode.addEventListener("pointerleave", hover(null));
+    mapNode.addEventListener("focus", hover(mapNode.dataset.nodeId));
+    mapNode.addEventListener("blur", hover(null));
   });
 
   syncMapLayout();
+}
+
+/* ---------- Orrery layout ---------- */
+
+// Orbit radii blend even steps with sqrt(real distance): the inner planets
+// cluster near the Sun and the outer ones spread out, as in reality, while
+// every ring stays readable. Periods follow Kepler's third law (T ~ a^1.5),
+// softened so the outer planets still visibly move.
+const ORRERY = {
+  innerAu: 0.39,
+  outerAu: 30.05,
+  evenWeight: 0.42,
+  innerPeriodMs: 28000,
+  periodExponent: 1.05,
+  moonPeriodMs: 7000,
+};
+
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+const planetDefinitions = nodeDefinitions.filter((node) => !node.parentId && node.realm !== "deep");
+
+function planetOrder(node) {
+  const index = planetDefinitions.indexOf(node);
+  return index < 0 ? "" : String(index + 1).padStart(2, "0");
+}
+
+// Space reserved above (heading) and below (selection card) the orbits,
+// measured from the overlay elements so the rings never sit under text.
+function measureMapSafeArea() {
+  const frame = elements.mapOverlay.getBoundingClientRect();
+  const heading = document.querySelector(".map-top")?.getBoundingClientRect();
+  const hud = document.querySelector(".map-hud")?.getBoundingClientRect();
+
+  state.mapSafe = {
+    top: heading ? heading.bottom - frame.top + 28 : 160,
+    bottom: hud ? frame.bottom - hud.top + 20 : 160,
+  };
 }
 
 function syncMapLayout(time = 0) {
@@ -473,15 +463,20 @@ function syncMapLayout(time = 0) {
     return;
   }
 
+  if (!state.mapSafe || state.mapSafeWidth !== frame.width || state.mapSafeHeight !== frame.height) {
+    measureMapSafeArea();
+    state.mapSafeWidth = frame.width;
+    state.mapSafeHeight = frame.height;
+    applyPlanetScale(frame.width);
+  }
+
   const layout = computeSolarLayout(frame.width, frame.height, time);
   state.solarLayout = layout;
   const labelLayouts = computeLabelLayout(layout, frame.width, frame.height);
   state.labelLayouts = labelLayouts;
 
-  if (elements.solarReference) {
-    elements.solarReference.style.setProperty("--sun-x", `${layout.sun.x}px`);
-    elements.solarReference.style.setProperty("--sun-y", `${layout.sun.y}px`);
-  }
+  elements.solarReference.style.setProperty("--sun-x", `${layout.sun.x}px`);
+  elements.solarReference.style.setProperty("--sun-y", `${layout.sun.y}px`);
 
   elements.mapNodes.forEach((mapNode) => {
     const layoutNode = layout.nodes.get(mapNode.dataset.nodeId);
@@ -492,10 +487,12 @@ function syncMapLayout(time = 0) {
 
     mapNode.style.left = `${layoutNode.x}px`;
     mapNode.style.top = `${layoutNode.y}px`;
+    mapNode.style.setProperty("--depth-scale", layoutNode.scale.toFixed(3));
 
     const labelLayout = labelLayouts.get(mapNode.dataset.nodeId);
 
     if (labelLayout) {
+      mapNode.classList.toggle("is-label-hidden", Boolean(labelLayout.hidden));
       mapNode.style.setProperty("--label-x", `${labelLayout.dx}px`);
       mapNode.style.setProperty("--label-y", `${labelLayout.dy}px`);
       mapNode.style.setProperty("--label-width", `${labelLayout.width}px`);
@@ -503,71 +500,42 @@ function syncMapLayout(time = 0) {
   });
 }
 
+// Planets shrink a little on small screens so the inner orbits stay clear.
+function applyPlanetScale(width) {
+  const factor = width <= 720 ? 0.72 : width <= 1100 ? 0.86 : 1;
+
+  elements.mapNodes.forEach((mapNode) => {
+    const node = nodeDefinitions.find((entry) => entry.id === mapNode.dataset.nodeId);
+    mapNode.style.setProperty("--planet-size", `${Math.round(node.size * factor)}px`);
+  });
+}
+
 function computeSolarLayout(width, height, time = 0) {
   const mobile = width <= 720;
-  const primaryNodes = nodeDefinitions.filter((node) => !node.parentId && node.realm !== "deep");
-  const sun = {
-    x: width * SOLAR_SYSTEM_REFERENCE.x,
-    y: height * SOLAR_SYSTEM_REFERENCE.y,
-  };
-  const horizontalPadding = mobile ? 58 : 120;
-  const topPadding = mobile ? 300 : 250;
-  const bottomPadding = mobile ? 210 : 176;
-  const outerOrbitX = Math.min(
-    sun.x - horizontalPadding,
-    width - sun.x - horizontalPadding,
-    (sun.y - topPadding) / SOLAR_SYSTEM_REFERENCE.orbitTilt,
-    (height - sun.y - bottomPadding) / SOLAR_SYSTEM_REFERENCE.orbitTilt,
-  );
-  const innerOrbitX = Math.max(mobile ? 58 : 92, outerOrbitX * (mobile ? 0.29 : 0.26));
-  const orbitSpan = Math.max(1, outerOrbitX - innerOrbitX);
-  const arcRotation = time * SOLAR_DISPLAY_ARC.rotationSpeed;
-
+  const safe = state.mapSafe || { top: 160, bottom: 160 };
+  const top = safe.top;
+  const bottom = height - safe.bottom;
+  const sun = { x: width / 2, y: (top + bottom) / 2 };
+  const maxRx = width / 2 - (mobile ? 20 : 72);
+  const maxRy = Math.max(80, (bottom - top) / 2);
+  // A three-quarter overhead view where there is room; flatter screens get
+  // a lower angle, tall phones look almost straight down.
+  const tilt = clamp(maxRy / maxRx, mobile ? 0.62 : 0.4, 0.92);
+  const outerRx = Math.min(maxRx, maxRy / tilt);
+  const innerRx = mobile ? 40 : Math.max(64, outerRx * 0.11);
+  const auSpan = Math.sqrt(ORRERY.outerAu) - Math.sqrt(ORRERY.innerAu);
   const nodes = new Map();
 
-  nodeDefinitions.forEach((node) => {
-    if (typeof node.mapX === "number" && typeof node.mapY === "number") {
-      nodes.set(node.id, {
-        ...node,
-        x: width * node.mapX,
-        y: height * node.mapY,
-        orbitX: 0,
-        orbitY: 0,
-      });
-
-      return;
-    }
-
-    if (node.parentId) {
-      const parent = nodes.get(node.parentId);
-
-      if (!parent) {
-        return;
-      }
-
-      const orbitX = Math.max(24, Math.min(36, innerOrbitX * 0.34));
-      const orbitY = orbitX * 0.62;
-      const angle = degreesToRadians(node.angle) + time * (node.orbitSpeed || 0);
-
-      nodes.set(node.id, {
-        ...node,
-        x: parent.x + Math.cos(angle) * orbitX,
-        y: parent.y + Math.sin(angle) * orbitY,
-        orbitX,
-        orbitY,
-        parentId: node.parentId,
-      });
-
-      return;
-    }
-
-    const nodeIndex = primaryNodes.findIndex((entry) => entry.id === node.id);
-    const nodeRatio =
-      primaryNodes.length <= 1 ? 0.5 : nodeIndex / (primaryNodes.length - 1);
-    const orbitX = innerOrbitX + orbitSpan * nodeRatio;
-    const orbitY = orbitX * SOLAR_SYSTEM_REFERENCE.orbitTilt;
-    const displayAngle = lerp(SOLAR_DISPLAY_ARC.start, SOLAR_DISPLAY_ARC.end, nodeRatio);
-    const angle = degreesToRadians(displayAngle) + arcRotation;
+  planetDefinitions.forEach((node, index) => {
+    const even = index / (planetDefinitions.length - 1);
+    const real = (Math.sqrt(node.au) - Math.sqrt(ORRERY.innerAu)) / auSpan;
+    const fraction = ORRERY.evenWeight * even + (1 - ORRERY.evenWeight) * real;
+    const orbitX = innerRx + fraction * (outerRx - innerRx);
+    const orbitY = orbitX * tilt;
+    const period = ORRERY.innerPeriodMs * (node.au / ORRERY.innerAu) ** ORRERY.periodExponent;
+    // Counter-clockwise as seen from above the Sun's north pole.
+    const angle = index * GOLDEN_ANGLE + 0.9 - (time / period) * Math.PI * 2;
+    const depth = Math.sin(angle); // +1 = nearest the viewer
 
     nodes.set(node.id, {
       ...node,
@@ -575,39 +543,117 @@ function computeSolarLayout(width, height, time = 0) {
       y: sun.y + Math.sin(angle) * orbitY,
       orbitX,
       orbitY,
+      angle,
+      depth,
+      scale: 0.88 + 0.12 * ((depth + 1) / 2),
     });
   });
 
-  return { sun, nodes };
+  const earth = nodes.get("earth");
+  const mars = nodes.get("mars");
+
+  nodeDefinitions.forEach((node) => {
+    if (node.parentId && earth) {
+      const gap = mars ? mars.orbitX - earth.orbitX : 30;
+      const orbitX = clamp(gap * 0.32, 9, 18);
+      const angle = 1.2 - (time / ORRERY.moonPeriodMs) * Math.PI * 2;
+
+      nodes.set(node.id, {
+        ...node,
+        x: earth.x + Math.cos(angle) * orbitX,
+        y: earth.y + Math.sin(angle) * orbitX * tilt,
+        orbitX,
+        orbitY: orbitX * tilt,
+        angle,
+        depth: earth.depth,
+        scale: earth.scale,
+      });
+    }
+
+    if (node.realm === "deep") {
+      const [cx, cy] = node.corner;
+      const outerRy = outerRx * tilt;
+
+      nodes.set(node.id, {
+        ...node,
+        x: clamp(sun.x + cx * outerRx * 0.97, 28, width - 28),
+        y: clamp(sun.y + cy * outerRy * 0.97, top + 10, bottom - 10),
+        orbitX: 0,
+        orbitY: 0,
+        depth: 0,
+        scale: 1,
+      });
+    }
+  });
+
+  return { sun, nodes, tilt, top, bottom, mobile };
+}
+
+/* ---------- Labels ---------- */
+
+function labelText(node) {
+  const order = planetOrder(node);
+
+  return {
+    title: order ? `${order} ${node.title}` : node.title,
+    detail: node.au ? `${node.au.toFixed(2)} AU` : node.distance || node.kicker,
+  };
+}
+
+// Phones show just the order number beside each planet (the full name
+// appears on the selected one) so twelve labels never crowd the view.
+function labelSize(node, mobile, active) {
+  const text = labelText(node);
+  const compact = mobile && !active;
+
+  if (compact) {
+    return { width: planetOrder(node) ? 30 : Math.ceil(node.title.length * 6.4) + 16, height: 22 };
+  }
+
+  return {
+    width: Math.ceil(Math.max(text.title.length * 8.3, text.detail.length * 6.6)) + 24,
+    height: 38,
+  };
 }
 
 function computeLabelLayout(layout, width, height) {
-  const mobile = width <= 720;
-  const config = mobile ? MAP_LABEL_CONFIG.mobile : MAP_LABEL_CONFIG.desktop;
-  const safeTop = mobile ? 230 : 200;
-  const safeBottom = config.bottomSafeArea;
+  const padding = layout.mobile ? 8 : 16;
   const labelLayouts = new Map();
   const placedRects = [];
   const planets = Array.from(layout.nodes.values()).map((node) => ({
     id: node.id,
+    parentId: node.parentId,
     x: node.x,
     y: node.y,
-    radius: Math.max(node.size * 0.7, 10),
+    radius: Math.max(node.size * 0.6, 7),
   }));
-  const sunRadius = Math.min(96, Math.max(68, width * 0.07));
+  const sunRadius = layout.mobile ? 34 : 52;
+  const focusId = state.hoverNodeId || state.selectedNode.id;
 
-  nodeDefinitions.forEach((nodeDefinition) => {
+  // Place the selected label first so it always gets its best spot.
+  const ordered = [...nodeDefinitions].sort(
+    (first, second) =>
+      Number(second.id === state.selectedNode.id) - Number(first.id === state.selectedNode.id),
+  );
+
+  ordered.forEach((nodeDefinition) => {
     const node = layout.nodes.get(nodeDefinition.id);
-    const previousLabelLayout = state.labelLayouts.get(nodeDefinition.id);
 
     if (!node) {
       return;
     }
 
-    const labelWidth =
-      node.labelWidth || (node.id === "moon" && mobile ? 118 : config.labelWidth);
-    const labelHeight = config.labelHeight;
-    const candidates = buildLabelCandidates(node, labelWidth, labelHeight, config.padding);
+    const active = node.id === state.selectedNode.id;
+
+    // A moon sits right beside its planet; label it only when in focus.
+    if (node.parentId && node.id !== focusId) {
+      labelLayouts.set(node.id, { dx: 0, dy: 0, width: 0, hidden: true });
+      return;
+    }
+
+    const { width: labelWidth, height: labelHeight } = labelSize(node, layout.mobile, active);
+    const previousLabelLayout = state.labelLayouts.get(node.id);
+    const candidates = buildLabelCandidates(node, labelWidth, labelHeight, layout.mobile ? 6 : 10);
     let bestCandidate = null;
 
     candidates.forEach((candidate, index) => {
@@ -618,8 +664,8 @@ function computeLabelLayout(layout, width, height) {
         height: labelHeight,
       };
       const rect = {
-        x: clamp(rawRect.x, config.padding, width - labelWidth - config.padding),
-        y: clamp(rawRect.y, safeTop, height - labelHeight - safeBottom),
+        x: clamp(rawRect.x, padding, width - labelWidth - padding),
+        y: clamp(rawRect.y, layout.top - 16, layout.bottom - labelHeight + 16),
         width: labelWidth,
         height: labelHeight,
       };
@@ -628,14 +674,15 @@ function computeLabelLayout(layout, width, height) {
         node,
         planets,
         placedRects,
-        previousRect: previousLabelLayout
-          ? {
-              x: node.x + previousLabelLayout.dx,
-              y: node.y + previousLabelLayout.dy,
-              width: previousLabelLayout.width,
-              height: labelHeight,
-            }
-          : null,
+        previousRect:
+          previousLabelLayout && previousLabelLayout.width === labelWidth
+            ? {
+                x: node.x + previousLabelLayout.dx,
+                y: node.y + previousLabelLayout.dy,
+                width: labelWidth,
+                height: labelHeight,
+              }
+            : null,
         sun: { x: layout.sun.x, y: layout.sun.y, radius: sunRadius },
         preferredRect: rawRect,
         candidateIndex: index,
@@ -645,10 +692,6 @@ function computeLabelLayout(layout, width, height) {
         bestCandidate = { rect, score };
       }
     });
-
-    if (!bestCandidate) {
-      return;
-    }
 
     placedRects.push({ ...bestCandidate.rect, id: node.id });
     labelLayouts.set(node.id, {
@@ -662,19 +705,19 @@ function computeLabelLayout(layout, width, height) {
 }
 
 function buildLabelCandidates(node, labelWidth, labelHeight, gap) {
-  const sideGap = gap + node.size * 0.5;
-  const verticalGap = gap + node.size * 0.25;
+  const radius = (node.size * (node.scale || 1)) / 2;
+  const side = radius + gap;
+  const vertical = radius + gap * 0.5;
 
   return dedupeCandidates([
-    { dx: node.labelDx, dy: node.labelDy },
-    { dx: sideGap, dy: -labelHeight - verticalGap },
-    { dx: sideGap, dy: verticalGap },
-    { dx: -labelWidth - sideGap, dy: -labelHeight - verticalGap },
-    { dx: -labelWidth - sideGap, dy: verticalGap },
-    { dx: -labelWidth * 0.5, dy: -labelHeight - verticalGap },
-    { dx: -labelWidth * 0.5, dy: verticalGap },
-    { dx: sideGap, dy: -labelHeight * 0.5 },
-    { dx: -labelWidth - sideGap, dy: -labelHeight * 0.5 },
+    { dx: side, dy: -labelHeight / 2 },
+    { dx: -labelWidth - side, dy: -labelHeight / 2 },
+    { dx: side * 0.6, dy: -labelHeight - vertical },
+    { dx: side * 0.6, dy: vertical },
+    { dx: -labelWidth - side * 0.6, dy: -labelHeight - vertical },
+    { dx: -labelWidth - side * 0.6, dy: vertical },
+    { dx: -labelWidth / 2, dy: -labelHeight - vertical },
+    { dx: -labelWidth / 2, dy: vertical },
   ]);
 }
 
@@ -708,8 +751,8 @@ function measureLabelScore({
   score += Math.abs(rect.y - preferredRect.y) * 0.8;
 
   if (previousRect) {
-    score += Math.abs(rect.x - previousRect.x) * 0.35;
-    score += Math.abs(rect.y - previousRect.y) * 0.35;
+    score += Math.abs(rect.x - previousRect.x) * 1.2;
+    score += Math.abs(rect.y - previousRect.y) * 1.2;
   }
 
   placedRects.forEach((placedRect) => {
@@ -721,7 +764,8 @@ function measureLabelScore({
   });
 
   planets.forEach((planet) => {
-    if (planet.id === node.id) {
+    // A planet and its own moon never push each other's labels around.
+    if (planet.id === node.id || planet.parentId === node.id || planet.id === node.parentId) {
       return;
     }
 
@@ -1583,7 +1627,9 @@ function initializeStarfield() {
 
     const starCount = Math.max(720, Math.floor((frame.width * frame.height) / 1300));
     starState.stars = createStarField(frame.width, frame.height, starCount);
-    starState.asteroidBelt = Array.from({ length: 180 }, () => createAsteroid());
+    starState.asteroidBelt = Array.from({ length: 240 }, () => createAsteroid());
+    starState.kuiperBelt = Array.from({ length: 200 }, () => createKuiperObject());
+    state.mapSafe = null;
     syncMapLayout(state.animationTime);
   }
 
@@ -1662,9 +1708,19 @@ function createStar(x, y) {
 function createAsteroid() {
   return {
     angle: Math.random() * Math.PI * 2,
-    spread: Math.random() * 36 - 18,
-    size: Math.random() * 1.7 + 0.25,
-    alpha: Math.random() * 0.3 + 0.16,
+    band: Math.random(),
+    size: Math.random() * 1.3 + 0.3,
+    alpha: Math.random() * 0.35 + 0.12,
+    speed: 0.6 + Math.random() * 0.5,
+  };
+}
+
+function createKuiperObject() {
+  return {
+    angle: Math.random() * Math.PI * 2,
+    band: Math.random(),
+    size: Math.random() * 1 + 0.25,
+    alpha: Math.random() * 0.16 + 0.05,
   };
 }
 
@@ -1675,108 +1731,120 @@ function drawSolarSystemGuides(context, time) {
     return;
   }
 
-  drawEclipticBand(context, layout);
-  drawOrbitGuides(context, layout);
-  drawAsteroidBelt(context, layout, time);
+  drawOrbitRings(context, layout);
+  drawBelt(context, layout, time);
+  drawTrails(context, layout);
   drawMoonOrbit(context, layout);
-  drawDeepSpaceBridge(context, layout);
 }
 
-function drawEclipticBand(context, layout) {
-  const earth = layout.nodes.get("earth");
-  const jupiter = layout.nodes.get("jupiter");
-  const saturn = layout.nodes.get("saturn");
+function highlightedNodeId() {
+  return state.hoverNodeId || state.selectedNode.id;
+}
 
-  if (!earth || !jupiter || !saturn) {
-    return;
-  }
-
-  const gradient = context.createLinearGradient(
-    layout.sun.x,
-    layout.sun.y,
-    saturn.x + 40,
-    saturn.y,
-  );
-
-  gradient.addColorStop(0, "rgba(255, 176, 70, 0.11)");
-  gradient.addColorStop(0.28, "rgba(114, 230, 255, 0.07)");
-  gradient.addColorStop(0.72, "rgba(74, 143, 255, 0.04)");
-  gradient.addColorStop(1, "rgba(12, 33, 74, 0)");
+// Each ring is drawn faintly all round, then its near half again slightly
+// brighter, which reads as depth. The selected or hovered orbit lights up.
+function drawOrbitRings(context, layout) {
+  const highlighted = highlightedNodeId();
+  const highlightedParent = layout.nodes.get(highlighted)?.parentId;
 
   context.save();
-  context.strokeStyle = gradient;
-  context.lineCap = "round";
-  context.lineWidth = Math.min(88, starState.height * 0.125);
-  context.beginPath();
-  context.moveTo(layout.sun.x + 18, layout.sun.y - 8);
-  context.bezierCurveTo(
-    earth.x - 50,
-    earth.y - 88,
-    jupiter.x - 80,
-    jupiter.y + 62,
-    saturn.x - 22,
-    saturn.y - 4,
-  );
-  context.stroke();
+
+  planetDefinitions.forEach((definition) => {
+    const node = layout.nodes.get(definition.id);
+    const active = node.id === highlighted || node.id === highlightedParent;
+
+    context.lineWidth = active ? 1.4 : 1;
+    context.strokeStyle = active ? "rgba(255, 255, 255, 0.55)" : "rgba(255, 255, 255, 0.09)";
+    context.beginPath();
+    context.ellipse(layout.sun.x, layout.sun.y, node.orbitX, node.orbitY, 0, 0, Math.PI * 2);
+    context.stroke();
+
+    if (!active) {
+      context.strokeStyle = "rgba(255, 255, 255, 0.07)";
+      context.beginPath();
+      context.ellipse(layout.sun.x, layout.sun.y, node.orbitX, node.orbitY, 0, 0, Math.PI);
+      context.stroke();
+    }
+  });
+
   context.restore();
 }
 
-function drawOrbitGuides(context, layout) {
+// A short fading arc behind each planet shows its direction of travel.
+function drawTrails(context, layout) {
+  const segments = 18;
+  const length = 0.6;
+
   context.save();
-  context.strokeStyle = "rgba(153, 194, 235, 0.17)";
-  context.lineWidth = 1;
+  context.lineCap = "round";
 
-  nodeDefinitions
-    .filter((node) => !node.parentId && node.realm !== "deep")
-    .forEach((node, index) => {
-      const positionedNode = layout.nodes.get(node.id);
+  planetDefinitions.forEach((definition) => {
+    const node = layout.nodes.get(definition.id);
+    const rgb = hexToRgba(node.color, 1).slice(5, -4);
+    const width = Math.max(1.4, Math.min(3, node.size * 0.16));
 
-      if (!positionedNode) {
-        return;
-      }
+    for (let index = 0; index < segments; index += 1) {
+      const start = node.angle + (index / segments) * length;
+      const end = node.angle + ((index + 1) / segments) * length;
+      const alpha = 0.55 * (1 - index / segments) ** 1.6;
 
-      context.setLineDash(index % 2 === 0 ? [5, 10] : [2, 8]);
+      context.strokeStyle = `rgba(${rgb}, ${alpha.toFixed(3)})`;
+      context.lineWidth = width;
       context.beginPath();
-      context.ellipse(
-        layout.sun.x,
-        layout.sun.y,
-        positionedNode.orbitX,
-        positionedNode.orbitY,
-        0,
+      context.ellipse(layout.sun.x, layout.sun.y, node.orbitX, node.orbitY, 0, start, end);
+      context.stroke();
+    }
+  });
+
+  context.restore();
+}
+
+// Asteroid belt between Mars and Jupiter; Kuiper belt just past Neptune.
+function drawBelt(context, layout, time) {
+  const mars = layout.nodes.get("mars");
+  const jupiter = layout.nodes.get("jupiter");
+  const neptune = layout.nodes.get("neptune");
+
+  context.save();
+
+  if (mars && jupiter) {
+    const inner = mars.orbitX + (jupiter.orbitX - mars.orbitX) * 0.3;
+    const outer = mars.orbitX + (jupiter.orbitX - mars.orbitX) * 0.66;
+
+    starState.asteroidBelt.forEach((asteroid) => {
+      const radius = inner + (outer - inner) * asteroid.band;
+      const angle = asteroid.angle - time * 0.000035 * asteroid.speed;
+
+      context.fillStyle = `rgba(214, 196, 160, ${asteroid.alpha})`;
+      context.beginPath();
+      context.arc(
+        layout.sun.x + Math.cos(angle) * radius,
+        layout.sun.y + Math.sin(angle) * radius * layout.tilt,
+        asteroid.size,
         0,
         Math.PI * 2,
       );
-      context.stroke();
+      context.fill();
     });
-
-  context.restore();
-}
-
-function drawAsteroidBelt(context, layout, time) {
-  const mars = layout.nodes.get("mars");
-  const jupiter = layout.nodes.get("jupiter");
-
-  if (!mars || !jupiter) {
-    return;
   }
 
-  const beltOrbitX = (mars.orbitX + jupiter.orbitX) * 0.5;
-  const beltOrbitY = beltOrbitX * SOLAR_SYSTEM_REFERENCE.orbitTilt;
+  if (neptune) {
+    starState.kuiperBelt.forEach((object) => {
+      const radius = neptune.orbitX * (1.04 + object.band * 0.07);
+      const angle = object.angle - time * 0.000004;
 
-  context.save();
-
-  starState.asteroidBelt.forEach((asteroid) => {
-    const orbitX = beltOrbitX + asteroid.spread;
-    const orbitY = beltOrbitY + asteroid.spread * SOLAR_SYSTEM_REFERENCE.orbitTilt;
-    const angle = asteroid.angle + time * 0.00004;
-    const x = layout.sun.x + Math.cos(angle) * orbitX;
-    const y = layout.sun.y + Math.sin(angle) * orbitY;
-
-    context.beginPath();
-    context.fillStyle = `rgba(201, 185, 148, ${asteroid.alpha})`;
-    context.arc(x, y, asteroid.size, 0, Math.PI * 2);
-    context.fill();
-  });
+      context.fillStyle = `rgba(190, 210, 255, ${object.alpha})`;
+      context.beginPath();
+      context.arc(
+        layout.sun.x + Math.cos(angle) * radius,
+        layout.sun.y + Math.sin(angle) * radius * layout.tilt,
+        object.size,
+        0,
+        Math.PI * 2,
+      );
+      context.fill();
+    });
+  }
 
   context.restore();
 }
@@ -1790,44 +1858,11 @@ function drawMoonOrbit(context, layout) {
   }
 
   context.save();
-  context.strokeStyle = "rgba(190, 216, 255, 0.18)";
-  context.lineWidth = 1;
-  context.setLineDash([3, 5]);
+  context.strokeStyle = "rgba(255, 255, 255, 0.22)";
+  context.lineWidth = 0.8;
+  context.setLineDash([2, 3]);
   context.beginPath();
   context.ellipse(earth.x, earth.y, moon.orbitX, moon.orbitY, 0, 0, Math.PI * 2);
-  context.stroke();
-  context.restore();
-}
-
-function drawDeepSpaceBridge(context, layout) {
-  const orion = layout.nodes.get("orion");
-  const pillars = layout.nodes.get("pillars");
-  const andromeda = layout.nodes.get("andromeda");
-  const neptune = layout.nodes.get("neptune");
-
-  if (!orion || !pillars || !andromeda || !neptune) {
-    return;
-  }
-
-  context.save();
-  context.strokeStyle = "rgba(143, 233, 255, 0.2)";
-  context.lineWidth = 1.1;
-  context.setLineDash([4, 9]);
-
-  context.beginPath();
-  context.moveTo(orion.x, orion.y);
-  context.quadraticCurveTo(pillars.x - 20, pillars.y - 35, pillars.x, pillars.y);
-  context.quadraticCurveTo(andromeda.x - 80, andromeda.y + 25, andromeda.x, andromeda.y);
-  context.stroke();
-
-  context.beginPath();
-  context.moveTo(neptune.x + 18, neptune.y - 18);
-  context.quadraticCurveTo(
-    neptune.x + 60,
-    neptune.y - 120,
-    andromeda.x - 22,
-    andromeda.y + 8,
-  );
   context.stroke();
   context.restore();
 }
