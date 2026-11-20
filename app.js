@@ -2070,7 +2070,6 @@ async function refreshHeroDaylight() {
       if (response.ok) {
         const position = await response.json();
         setHeroDaylight(position.visibility === "daylight");
-  setNavIss(position);
         setNavIss(position);
       }
     } catch {
@@ -2095,6 +2094,7 @@ function renderIss(position) {
   elements.issSpeed.textContent = `${Math.round(speed).toLocaleString()} km/h`;
   elements.issSun.textContent = position.visibility === "daylight" ? "Daylight" : "Earth's shadow";
   setHeroDaylight(position.visibility === "daylight");
+  setNavIss(position);
   elements.issOrbits.textContent = (86400 / periodSeconds).toFixed(1);
 
   const time = new Date(Number(position.timestamp) * 1000);
