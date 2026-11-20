@@ -1,5 +1,5 @@
 import { createReadStream, existsSync, statSync } from "node:fs";
-import { extname, join, normalize } from "node:path";
+import { extname, isAbsolute, join, normalize, relative } from "node:path";
 import { createServer } from "node:http";
 
 const PORT = Number(process.env.PORT || 3000);
@@ -22,9 +22,21 @@ const contentTypes = {
 createServer((request, response) => {
   const pathname = (request.url || "/").split("?")[0];
   const requestPath = pathname === "/" ? "/index.html" : pathname;
-  const filePath = normalize(join(ROOT, decodeURIComponent(requestPath)));
+  let decodedPath;
 
-  if (!filePath.startsWith(ROOT) || !existsSync(filePath) || statSync(filePath).isDirectory()) {
+  try {
+    decodedPath = decodeURIComponent(requestPath);
+  } catch {
+    response.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+    response.end("Bad request");
+    return;
+  }
+
+  const filePath = normalize(join(ROOT, decodedPath));
+  const fromRoot = relative(ROOT, filePath);
+  const insideRoot = fromRoot !== "" && !fromRoot.startsWith("..") && !isAbsolute(fromRoot);
+
+  if (!insideRoot || !existsSync(filePath) || statSync(filePath).isDirectory()) {
     response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
     response.end("Not found");
     return;

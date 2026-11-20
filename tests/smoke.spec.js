@@ -62,6 +62,23 @@ test.describe("page basics", () => {
       expect(asset, "asset URLs carry a version").toMatch(/\?v=/);
       const response = await request.get(asset);
       expect(response.ok()).toBeTruthy();
+      // Cloudflare sends no-cache (from _headers); the dev server sends no-store.
+      expect(response.headers()["cache-control"], asset).toMatch(/no-cache|no-store/);
     }
+  });
+
+  test("the ISS chip's accessible name includes the live values", async ({ page, isMobile }) => {
+    test.skip(isMobile, "The chip value is hidden on phones");
+    await page.goto("/");
+    await page.locator("#iss").scrollIntoViewIfNeeded();
+
+    await expect(page.getByRole("link", { name: /27,600 km\/h/ })).toBeVisible();
+  });
+
+  test("the hero does not claim to be live before the stream plays", async ({ page }) => {
+    await page.goto("/");
+    await page.waitForTimeout(1500);
+    // The fixture player never starts playing.
+    await expect(page.locator("#livePillText")).not.toHaveText(/^Live/);
   });
 });

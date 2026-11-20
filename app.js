@@ -645,15 +645,22 @@ function planetOrder(node) {
 // measured from the overlay elements so the rings never sit under text.
 function measureMapSafeArea() {
   const frame = elements.mapOverlay.getBoundingClientRect();
-  const heading = document.querySelector(".map-top")?.getBoundingClientRect();
+  // offsetTop/offsetHeight ignore the heading's fade-out transform, so a
+  // measurement taken while zoomed in matches the overview layout.
+  const heading = document.querySelector(".map-top");
   const hud = document.querySelector(".map-hud")?.getBoundingClientRect();
 
   state.mapSafe = {
-    top: heading ? heading.bottom - frame.top + 28 : 160,
+    top: heading ? heading.offsetTop + heading.offsetHeight + 28 : 160,
     bottom: hud ? frame.bottom - hud.top + 20 : 160,
-    // Where the selection card starts, for placing a zoomed-in planet.
-    hudTop: hud ? hud.top - frame.top : frame.height - 160,
+    hudTop: measureHudTop(frame),
   };
+}
+
+// Where the selection card starts, for placing a zoomed-in planet.
+function measureHudTop(frame = elements.mapOverlay.getBoundingClientRect()) {
+  const hud = document.querySelector(".map-hud")?.getBoundingClientRect();
+  return hud ? hud.top - frame.top : frame.height - 160;
 }
 
 function syncMapLayout(time = 0) {
@@ -668,7 +675,11 @@ function syncMapLayout(time = 0) {
     state.mapSafeWidth = frame.width;
     state.mapSafeHeight = frame.height;
     applyPlanetScale(frame.width);
+  } else if (state.hudChanged) {
+    state.mapSafe.hudTop = measureHudTop(frame);
   }
+
+  state.hudChanged = false;
 
   const layout = computeSolarLayout(frame.width, frame.height, time);
   applyCamera(layout, frame.width, frame.height, time);
@@ -1089,8 +1100,9 @@ function setSelectedNodeUI(node) {
   elements.selectionDescription.textContent = node.description;
   elements.galleryTitle.textContent = `Photos of ${node.title}`;
   renderNodeFacts(node);
-  // The selection card may have changed height; measure the map again.
-  state.mapSafe = null;
+  // The card may have changed height: re-measure only where it starts, so the
+  // overview orbits never jump when the selection changes.
+  state.hudChanged = true;
 
   elements.mapNodes.forEach((mapNode) => {
     mapNode.classList.toggle("is-active", mapNode.dataset.nodeId === node.id);
@@ -2106,10 +2118,12 @@ function drawMoonOrbit(context, layout) {
 const ISS_STREAM_ID = "ROboUHfPUrU";
 const PLAYER_ORIGIN = "https://www.youtube-nocookie.com";
 const PLAYER_PLAYING = 1;
+const PLAYER_ENDED = 0;
 
 const liveStream = {
   iframe: null,
   playing: false,
+  daylight: null,
   muted: true,
   inView: true,
 };
@@ -2147,6 +2161,19 @@ function initializeLiveStream() {
       hero.classList.add("is-live");
       elements.soundToggle.hidden = false;
       elements.heroCredit.textContent = "Live: NASA ISS HD Earth views";
+      renderLivePill();
+    }
+
+    // Broadcast ended or the player failed: fall back to the still image.
+    // (Paused is not "stopped": the page pauses a muted stream off screen.)
+    const failed = data?.event === "onError" || state === PLAYER_ENDED;
+
+    if (failed && liveStream.playing) {
+      liveStream.playing = false;
+      hero.classList.remove("is-live");
+      elements.soundToggle.hidden = true;
+      elements.heroCredit.textContent = "";
+      renderLivePill();
     }
   });
 
@@ -2154,7 +2181,15 @@ function initializeLiveStream() {
   if (reduceMotion) {
     elements.soundToggle.hidden = false;
     elements.soundLabel.textContent = "Play live";
-    elements.soundToggle.addEventListener("click", () => mountStreamPlayer(), { once: true });
+    elements.soundToggle.addEventListener(
+      "click",
+      () => {
+        mountStreamPlayer();
+        elements.soundLabel.textContent = "Sound on";
+        elements.soundToggle.setAttribute("aria-pressed", "false");
+      },
+      { once: true },
+    );
     return;
   }
 
@@ -2325,8 +2360,20 @@ function setNavIss(position) {
 }
 
 function setHeroDaylight(isDaylight) {
+  liveStream.daylight = isDaylight;
   document.querySelector(".hero").classList.toggle("is-night", !isDaylight);
-  elements.livePillText.textContent = isDaylight ? "Live from the ISS" : "Live from the ISS · night side";
+  renderLivePill();
+}
+
+function renderLivePill() {
+  const night = liveStream.daylight === false;
+
+  if (!liveStream.playing) {
+    elements.livePillText.textContent = night ? "From the ISS · night side" : "From the ISS";
+    return;
+  }
+
+  elements.livePillText.textContent = night ? "Live from the ISS · night side" : "Live from the ISS";
 }
 
 async function refreshHeroDaylight() {

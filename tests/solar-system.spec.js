@@ -135,6 +135,26 @@ test.describe("solar system", () => {
     await expect(page.locator("#selectionFacts")).toContainText("Spiral galaxy");
   });
 
+  test("changing the selection never moves or resizes the overview", async ({ page }) => {
+    const measure = () =>
+      page.evaluate(() => {
+        // Relative to the map, so page scrolling doesn't count as movement.
+        const frame = document.querySelector(".canvas-frame").getBoundingClientRect();
+        const sun = document.querySelector(".sun-anchor").getBoundingClientRect();
+        return { x: sun.x + sun.width / 2 - frame.x, y: sun.y + sun.height / 2 - frame.y };
+      });
+
+    const before = await measure();
+    // Deep-sky objects show fewer facts, so the info card changes height.
+    await page.locator('.rail-chip[data-node-id="andromeda"]').click();
+    await expect(page.locator("#selectionFacts > div")).toHaveCount(2);
+    await page.waitForTimeout(300);
+    const after = await measure();
+
+    expect(Math.abs(after.x - before.x)).toBeLessThan(1);
+    expect(Math.abs(after.y - before.y)).toBeLessThan(1);
+  });
+
   test("the destination bar lists planets in order and selects them", async ({ page }) => {
     const numbered = await page
       .locator(".rail-chip .rail-order")
