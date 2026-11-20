@@ -155,6 +155,18 @@ test.describe("solar system", () => {
     expect(Math.abs(after.y - before.y)).toBeLessThan(1);
   });
 
+  test("the orbits stay clear of the info card", async ({ page }) => {
+    await page.waitForTimeout(800);
+    // Andromeda sits at the bottom corner of the outermost orbit's bounds.
+    const { orbitsBottom, cardTop } = await page.evaluate(() => {
+      const marker = document.querySelector('.map-node[data-node-id="andromeda"]').getBoundingClientRect();
+      const card = document.querySelector(".map-hud > div").getBoundingClientRect();
+      return { orbitsBottom: marker.top + marker.height / 2, cardTop: card.top };
+    });
+
+    expect(orbitsBottom).toBeLessThanOrEqual(cardTop);
+  });
+
   test("the destination bar lists planets in order and selects them", async ({ page }) => {
     const numbered = await page
       .locator(".rail-chip .rail-order")

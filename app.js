@@ -677,6 +677,9 @@ function syncMapLayout(time = 0) {
     applyPlanetScale(frame.width);
   } else if (state.hudChanged) {
     state.mapSafe.hudTop = measureHudTop(frame);
+    // A taller card than any so far: grow the reserved space once. Shorter
+    // cards never shrink it, so switching selections doesn't move the orbits.
+    state.mapSafe.bottom = Math.max(state.mapSafe.bottom, frame.height - state.mapSafe.hudTop + 20);
   }
 
   state.hudChanged = false;
@@ -2131,6 +2134,7 @@ const liveStream = {
 function initializeLiveStream() {
   const hero = document.querySelector(".hero");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  liveStream.reducedMotion = reduceMotion;
 
   elements.soundToggle.addEventListener("click", toggleStreamSound);
   elements.fullscreenToggle.addEventListener("click", toggleHeroFullscreen);
@@ -2160,7 +2164,11 @@ function initializeLiveStream() {
       liveStream.playing = true;
       hero.classList.add("is-live");
       elements.soundToggle.hidden = false;
+      elements.soundToggle.disabled = false;
+      elements.soundToggle.setAttribute("aria-pressed", String(!liveStream.muted));
+      elements.soundLabel.textContent = liveStream.muted ? "Sound on" : "Sound off";
       elements.heroCredit.textContent = "Live: NASA ISS HD Earth views";
+      liveStream.awaitingRetry = false;
       renderLivePill();
     }
 
@@ -2171,7 +2179,16 @@ function initializeLiveStream() {
     if (failed && liveStream.playing) {
       liveStream.playing = false;
       hero.classList.remove("is-live");
-      elements.soundToggle.hidden = true;
+
+      if (liveStream.reducedMotion) {
+        // The button is this visitor's only control: turn it into a retry.
+        liveStream.awaitingRetry = true;
+        elements.soundLabel.textContent = "Play live";
+        elements.soundToggle.setAttribute("aria-pressed", "false");
+      } else {
+        elements.soundToggle.hidden = true;
+      }
+
       elements.heroCredit.textContent = "";
       renderLivePill();
     }
@@ -2185,8 +2202,8 @@ function initializeLiveStream() {
       "click",
       () => {
         mountStreamPlayer();
-        elements.soundLabel.textContent = "Sound on";
-        elements.soundToggle.setAttribute("aria-pressed", "false");
+        elements.soundLabel.textContent = "Starting...";
+        elements.soundToggle.disabled = true;
       },
       { once: true },
     );
@@ -2251,6 +2268,14 @@ function streamCommand(func, args = []) {
 
 function toggleStreamSound() {
   if (!liveStream.iframe) {
+    return;
+  }
+
+  if (liveStream.awaitingRetry) {
+    liveStream.awaitingRetry = false;
+    elements.soundLabel.textContent = "Starting...";
+    elements.soundToggle.disabled = true;
+    streamCommand("playVideo");
     return;
   }
 
@@ -2432,6 +2457,10 @@ async function bootstrap() {
   initializeLoadMore();
   initializeSurpriseButton();
   initializeStarfield();
+  // The heading's height depends on the web font; measure again once it loads.
+  document.fonts?.ready.then(() => {
+    state.mapSafe = null;
+  });
   setSelectedNodeUI(state.selectedNode);
   setStatus("Initializing NASA feed...");
   // Independent requests: load the spotlight and the gallery in parallel.

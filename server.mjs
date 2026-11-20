@@ -1,5 +1,5 @@
 import { createReadStream, existsSync, statSync } from "node:fs";
-import { extname, isAbsolute, join, normalize, relative } from "node:path";
+import { extname, isAbsolute, join, normalize, relative, sep } from "node:path";
 import { createServer } from "node:http";
 
 const PORT = Number(process.env.PORT || 3000);
@@ -34,7 +34,8 @@ createServer((request, response) => {
 
   const filePath = normalize(join(ROOT, decodedPath));
   const fromRoot = relative(ROOT, filePath);
-  const insideRoot = fromRoot !== "" && !fromRoot.startsWith("..") && !isAbsolute(fromRoot);
+  const leavesRoot = fromRoot === ".." || fromRoot.startsWith(`..${sep}`);
+  const insideRoot = fromRoot !== "" && !leavesRoot && !isAbsolute(fromRoot);
 
   if (!insideRoot || !existsSync(filePath) || statSync(filePath).isDirectory()) {
     response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
