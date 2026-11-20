@@ -7,5 +7,9 @@
   "assets": {
     "directory": "./",
     "not_found_handling": "single-page-application"
-  }
+  },
+  // Enables preview deployments: Cloudflare runs `wrangler preview` for
+  // non-production branches (pull requests). Assets and compatibility
+  // settings are inherited from the top level, so the block can be empty.
+  "previews": {}
 }
