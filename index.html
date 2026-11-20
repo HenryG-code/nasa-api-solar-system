@@ -6,7 +6,7 @@
     <title>Universe Atlas</title>
     <meta
       name="description"
-      content="Watch Earth live from the International Space Station, track it in real time, and explore the solar system and deep sky through NASA's archive."
+      content="Watch Earth live from the International Space Station, track it in real time, and explore the planets through NASA's photo archive."
     />
     <meta name="theme-color" content="#000000" />
     <meta property="og:title" content="Universe Atlas" />
@@ -30,7 +30,7 @@
       href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=b0e519f" />
+    <link rel="stylesheet" href="./styles.css?v=2026-11-20b" />
   </head>
   <body>
     <a class="skip-link" href="#atlas">Skip to the atlas</a>
@@ -63,8 +63,8 @@
       </div>
       <div class="panel-copy">
         <p class="kicker"><span class="live-dot" aria-hidden="true"></span> <span id="livePillText">Live from the ISS</span></p>
-        <h1>The cosmos, live</h1>
-        <p class="lead">Earth from orbit, in real time. Then the rest of the universe.</p>
+        <h1>Watch Earth live from space</h1>
+        <p class="lead">A live camera on the International Space Station, 400&nbsp;km above you. Scroll on to track it and explore the solar system.</p>
         <div class="hero-actions">
           <a class="button" href="#atlas">Explore <span class="button-arrow" aria-hidden="true"></span></a>
           <a class="button" href="#iss">Track the ISS <span class="button-arrow" aria-hidden="true"></span></a>
@@ -139,6 +139,7 @@
             <div>
               <p class="kicker"><span class="live-dot" aria-hidden="true"></span> Live tracker</p>
               <h2 id="issTitle">Where is the ISS right now?</h2>
+              <p class="section-lead">The station circles Earth every 92 minutes at about 28,000&nbsp;km/h. Its position updates here every few seconds.</p>
             </div>
             <p class="iss-updated" id="issUpdated" aria-live="off">Connecting...</p>
           </div>
@@ -204,8 +205,9 @@
 
           <div class="map-top">
             <div>
-              <p class="kicker">The solar system, from above</p>
-              <h2 id="atlasTitle">Closest to the Sun, outward</h2>
+              <p class="kicker">Interactive solar system</p>
+              <h2 id="atlasTitle">Explore the planets</h2>
+              <p class="section-lead">All eight planets in order from the Sun, moving at their relative speeds. Select any planet or deep-sky object to see NASA&rsquo;s photos of it.</p>
             </div>
             <button class="button" id="surpriseButton" type="button">
               Surprise me <span class="button-arrow" aria-hidden="true"></span>
@@ -235,8 +237,9 @@
         <div class="shell">
           <div class="section-heading">
             <div>
-              <p class="kicker">From the NASA archive</p>
-              <h2 id="galleryTitle">Mars</h2>
+              <p class="kicker">NASA photo archive</p>
+              <h2 id="galleryTitle">Photos of Mars</h2>
+              <p class="section-lead">Real images from NASA&rsquo;s Image and Video Library. Select a photo to see it full size.</p>
             </div>
           </div>
 
@@ -285,6 +288,6 @@
       </div>
     </dialog>
 
-    <script type="module" src="./app.js?v=b0e519f"></script>
+    <script type="module" src="./app.js?v=2026-11-20b"></script>
   </body>
 </html>

@@ -163,6 +163,15 @@ h3 {
   animation: live-pulse 1.8s ease-out infinite;
 }
 
+/* Plain-language line under a section heading: what this is, what to do. */
+.section-lead {
+  max-width: 52ch;
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: clamp(1rem, 1.2vw, 1.12rem);
+  line-height: 1.5;
+}
+
 /* ---------- Buttons ---------- */
 
 .button {
@@ -361,6 +370,10 @@ h3 {
   position: relative;
   max-width: 600px;
   animation: rise-in 1s var(--ease) both;
+}
+
+.hero .panel-copy {
+  max-width: 860px;
 }
 
 .hero-actions {
@@ -1617,6 +1630,10 @@ h3 {
 
   .map-top {
     padding-top: 5.5rem;
+  }
+
+  .map-top .button {
+    display: none;
   }
 
   .map-node__label {

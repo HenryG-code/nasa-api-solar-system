@@ -865,7 +865,7 @@ function setSelectedNodeUI(node) {
   elements.selectionKicker.textContent = node.kicker;
   elements.selectionTitle.textContent = node.title;
   elements.selectionDescription.textContent = node.description;
-  elements.galleryTitle.textContent = node.title;
+  elements.galleryTitle.textContent = `Photos of ${node.title}`;
 
   elements.mapNodes.forEach((mapNode) => {
     mapNode.classList.toggle("is-active", mapNode.dataset.nodeId === node.id);

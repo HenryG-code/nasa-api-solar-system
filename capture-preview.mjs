@@ -1,14 +1,32 @@
+// Captures a viewport-sized screenshot of the site with headless Chrome.
+//
+// Usage: node capture-preview.mjs [url] [output.png] [#section] [width] [height]
+//   node capture-preview.mjs https://nasa-api-solar-system.gagianohenry.workers.dev preview.png "#atlas"
+//
+// Set CHROME_PATH if Chrome is installed somewhere else.
+
 import { spawn } from "node:child_process";
 import { mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
-const chromePath = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
-const profileDir = "C:\\Users\\USER\\AppData\\Local\\Temp\\universe-headless-profile";
-const outputPath = "C:\\Users\\USER\\Desktop\\Website Projects\\Universe\\preview.png";
+const [
+  targetUrl = "http://127.0.0.1:3000",
+  outputArg = "preview.png",
+  sectionSelector = "",
+  widthArg = "1440",
+  heightArg = "900",
+] = process.argv.slice(2);
+
+const chromePath =
+  process.env.CHROME_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
+const profileDir = join(tmpdir(), "universe-atlas-headless-profile");
+const outputPath = resolve(outputArg);
+const viewport = { width: Number(widthArg), height: Number(heightArg) };
 const remotePort = 9223;
-const targetUrl = "http://127.0.0.1:3000";
 
 function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((done) => setTimeout(done, ms));
 }
 
 async function waitForWebSocketUrl(timeoutMs = 15000) {
@@ -20,9 +38,7 @@ async function waitForWebSocketUrl(timeoutMs = 15000) {
 
       if (response.ok) {
         const pages = await response.json();
-        const page = pages.find(
-          (entry) => entry.type === "page" && entry.webSocketDebuggerUrl,
-        );
+        const page = pages.find((entry) => entry.type === "page" && entry.webSocketDebuggerUrl);
 
         if (page) {
           return page.webSocketDebuggerUrl;
@@ -48,81 +64,64 @@ function createProtocolClient(webSocketUrl) {
     const message = JSON.parse(event.data);
 
     if (message.id) {
-      const pendingRequest = pending.get(message.id);
+      const request = pending.get(message.id);
 
-      if (!pendingRequest) {
+      if (!request) {
         return;
       }
 
       pending.delete(message.id);
 
       if (message.error) {
-        pendingRequest.reject(new Error(message.error.message));
-        return;
+        request.reject(new Error(message.error.message));
+      } else {
+        request.resolve(message.result);
       }
 
-      pendingRequest.resolve(message.result);
       return;
     }
 
-    const eventListeners = listeners.get(message.method) || [];
-
-    for (const listener of eventListeners) {
-      listener(message.params);
-    }
+    (listeners.get(message.method) || []).forEach((listener) => listener(message.params));
   });
 
-  function waitForOpen() {
-    return new Promise((resolve, reject) => {
-      socket.addEventListener("open", () => resolve(), { once: true });
-      socket.addEventListener("error", reject, { once: true });
-    });
-  }
-
-  function send(method, params = {}) {
-    return new Promise((resolve, reject) => {
-      const id = ++nextId;
-      pending.set(id, { resolve, reject });
-      socket.send(JSON.stringify({ id, method, params }));
-    });
-  }
-
-  function waitForEvent(method, timeoutMs = 15000) {
-    return new Promise((resolve, reject) => {
-      const timer = setTimeout(() => {
-        const methodListeners = listeners.get(method) || [];
-        listeners.set(
-          method,
-          methodListeners.filter((listener) => listener !== onEvent),
-        );
-        reject(new Error(`Timed out waiting for ${method}.`));
-      }, timeoutMs);
-
-      function onEvent(params) {
-        clearTimeout(timer);
-        const methodListeners = listeners.get(method) || [];
-        listeners.set(
-          method,
-          methodListeners.filter((listener) => listener !== onEvent),
-        );
-        resolve(params);
-      }
-
-      const methodListeners = listeners.get(method) || [];
-      methodListeners.push(onEvent);
-      listeners.set(method, methodListeners);
-    });
-  }
-
-  function close() {
-    socket.close();
-  }
-
   return {
-    close,
-    send,
-    waitForEvent,
-    waitForOpen,
+    waitForOpen() {
+      return new Promise((done, fail) => {
+        socket.addEventListener("open", () => done(), { once: true });
+        socket.addEventListener("error", fail, { once: true });
+      });
+    },
+    send(method, params = {}) {
+      return new Promise((done, fail) => {
+        const id = ++nextId;
+        pending.set(id, { resolve: done, reject: fail });
+        socket.send(JSON.stringify({ id, method, params }));
+      });
+    },
+    waitForEvent(method, timeoutMs = 15000) {
+      return new Promise((done, fail) => {
+        const remove = () =>
+          listeners.set(
+            method,
+            (listeners.get(method) || []).filter((listener) => listener !== onEvent),
+          );
+        const timer = setTimeout(() => {
+          remove();
+          fail(new Error(`Timed out waiting for ${method}.`));
+        }, timeoutMs);
+
+        function onEvent(params) {
+          clearTimeout(timer);
+          remove();
+          done(params);
+        }
+
+        listeners.set(method, [...(listeners.get(method) || []), onEvent]);
+      });
+    },
+    close() {
+      socket.close();
+    },
   };
 }
 
@@ -135,43 +134,44 @@ async function main() {
     [
       `--user-data-dir=${profileDir}`,
       "--headless=new",
-      "--disable-gpu",
-      "--no-sandbox",
       "--hide-scrollbars",
+      "--autoplay-policy=no-user-gesture-required",
       `--remote-debugging-port=${remotePort}`,
       "about:blank",
     ],
-    {
-      stdio: "ignore",
-      windowsHide: true,
-    },
+    { stdio: "ignore", windowsHide: true },
   );
 
   try {
-    const webSocketUrl = await waitForWebSocketUrl();
-    const client = createProtocolClient(webSocketUrl);
+    const client = createProtocolClient(await waitForWebSocketUrl());
 
     await client.waitForOpen();
     await client.send("Page.enable");
     await client.send("Emulation.setDeviceMetricsOverride", {
-      width: 1440,
-      height: 2200,
+      width: viewport.width,
+      height: viewport.height,
       deviceScaleFactor: 1,
       mobile: false,
     });
 
-    const loadEvent = client.waitForEvent("Page.loadEventFired", 20000);
+    const loadEvent = client.waitForEvent("Page.loadEventFired", 30000);
     await client.send("Page.navigate", { url: targetUrl });
     await loadEvent;
-    await delay(3500);
+    await delay(2500);
 
-    const { data } = await client.send("Page.captureScreenshot", {
-      format: "png",
-      fromSurface: true,
-      captureBeyondViewport: true,
-    });
+    if (sectionSelector) {
+      await client.send("Runtime.evaluate", {
+        expression: `document.querySelector(${JSON.stringify(sectionSelector)})?.scrollIntoView({ behavior: "instant" })`,
+      });
+    }
+
+    // Let images, fonts and the animation settle.
+    await delay(6000);
+
+    const { data } = await client.send("Page.captureScreenshot", { format: "png", fromSurface: true });
 
     await writeFile(outputPath, Buffer.from(data, "base64"));
+    console.log(`Saved ${outputPath}`);
     client.close();
   } finally {
     chrome.kill();
