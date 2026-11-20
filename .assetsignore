@@ -9,3 +9,14 @@ capture-preview.mjs
 package.json
 package-lock.json
 *.log
+tests
+test-results
+playwright-report
+playwright-report-live
+playwright.config.js
+playwright.live.config.js
+docs
+README.md
+LICENSE
+.gitignore
+.assetsignore

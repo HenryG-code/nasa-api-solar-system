@@ -54,6 +54,29 @@ npm start
 
 Then open [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
+## Tests
+
+End-to-end tests use [Playwright](https://playwright.dev/) and run on desktop Chrome and an emulated Pixel 7. Every external service (NASA APIs, ISS telemetry, YouTube, ESA) is replaced with fixture data in `tests/fixtures.js`, so results are the same every run.
+
+```bash
+npm install
+npx playwright install chromium   # first time only
+npm test                          # tests a local server
+npm run test:live                 # tests the deployed site
+npm run test:ui                   # interactive runner
+npm run test:report               # open the last HTML report
+```
+
+| Spec | Covers |
+| --- | --- |
+| `smoke.spec.js` | Page loads with no script errors, no sideways scrolling, nav links, skip link, versioned assets |
+| `hero.spec.js` | Muted live ISS stream, calls to action, night-side mode, Sound control only when playing |
+| `iss.spec.js` | Telemetry formatting, header chip, polling only while visible, ESA map scaling |
+| `spotlight.spec.js` | APOD, archive fallback when APOD fails, unsafe video URLs rejected |
+| `solar-system.spec.js` | Planet order and distances, textures, relative speeds, click-to-zoom, zoom-out controls, facts, frame rate |
+| `gallery.spec.js` | Relevance filtering, de-duplication, Load more, full-size viewer with arrow keys |
+| `images.spec.js` | No photo drawn larger than its file allows; every planet texture exists |
+
 ## Deploy
 
 The site is deployed as a **Cloudflare Worker serving static assets** (`wrangler.jsonc`). It's connected to this repository, so every push to `main` deploys automatically.
@@ -70,6 +93,8 @@ The site is deployed as a **Cloudflare Worker serving static assets** (`wrangler
 |-- app.js              # Live stream, ISS tracker, solar system, NASA galleries
 |-- server.mjs          # Tiny static server for local development
 |-- capture-preview.mjs # Headless-Chrome screenshots for this README
+|-- tests/              # Playwright end-to-end tests
+|-- playwright.config.js / playwright.live.config.js
 |-- wrangler.jsonc      # Cloudflare Worker config
 |-- _headers            # Response headers on Cloudflare
 |-- .assetsignore       # Files kept out of the deployed site
