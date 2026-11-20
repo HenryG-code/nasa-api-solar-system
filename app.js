@@ -258,6 +258,9 @@ const elements = {
   heroVideo: document.querySelector("#heroVideo"),
   livePillText: document.querySelector("#livePillText"),
   navIssValue: document.querySelector("#navIssValue"),
+  canvasFrame: document.querySelector(".canvas-frame"),
+  zoomOutButton: document.querySelector("#zoomOutButton"),
+  selectionFacts: document.querySelector("#selectionFacts"),
   soundToggle: document.querySelector("#soundToggle"),
   soundLabel: document.querySelector("#soundLabel"),
   fullscreenToggle: document.querySelector("#fullscreenToggle"),
@@ -374,8 +377,12 @@ function renderMapNodes() {
       const deepClass = node.realm === "deep" ? " map-node--deep-space" : "";
       // Planets and the Moon use cropped NASA photos (assets/planets).
       const textured = node.realm !== "deep";
+      // Saturn is a transparent PNG so its rings sit cleanly over the Sun's glow.
+      const ext = node.hasRings ? "png" : "jpg";
       const textureClass = textured ? " map-node--textured" : "";
-      const textureStyle = textured ? `--texture:url(./assets/planets/${node.id}.jpg);` : "";
+      const textureStyle = textured
+        ? `--texture:url(./assets/planets/${node.id}.${ext});--texture-hi:url(./assets/planets/${node.id}-hi.${ext});`
+        : "";
       const atmosphereStyle = node.atmosphere ? `--atmo:${hexToRgba(node.atmosphere, 0.55)};` : "";
       const order = planetOrder(node);
 
@@ -430,6 +437,187 @@ function renderMapNodes() {
   syncMapLayout();
 }
 
+/* ---------- Camera: click a planet to zoom in ---------- */
+
+// The camera maps world positions (the overview layout) to the screen:
+//   screen = anchor + (world - pivot) * zoom
+// Zooming in pivots on the chosen planet: during the move the planet travels
+// in a straight line to its final spot while the zoom eases in logarithmically,
+// so nothing swoops. Once there, the pivot is the planet's live position, so
+// the camera tracks it exactly as it orbits.
+const ZOOM_DURATION_MS = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 1 : 1100;
+const LABEL_ZOOM_THRESHOLD = 1.6;
+const DETAIL_SIZE_PX = 56;
+
+function identityCamera() {
+  return { ax: 0, ay: 0, fx: 0, fy: 0, k: 1 };
+}
+
+state.camera = {
+  targetId: null,
+  from: identityCamera(),
+  current: identityCamera(),
+  progress: 1,
+  lastTime: null,
+};
+
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+}
+
+function isZoomable(node) {
+  return Boolean(node) && node.realm !== "deep";
+}
+
+function zoomTo(nodeId) {
+  const camera = state.camera;
+
+  if (camera.targetId === nodeId && camera.progress >= 1) {
+    return;
+  }
+
+  camera.from = { ...camera.current };
+  camera.targetId = nodeId;
+  camera.progress = 0;
+  syncZoomUI();
+}
+
+function zoomOut() {
+  if (!state.camera.targetId) {
+    return;
+  }
+
+  state.camera.from = { ...state.camera.current };
+  state.camera.targetId = null;
+  state.camera.progress = 0;
+  state.hoverNodeId = null;
+  syncZoomUI();
+}
+
+function syncZoomUI() {
+  const zoomed = Boolean(state.camera.targetId);
+  elements.canvasFrame.classList.toggle("is-zoomed", zoomed);
+  elements.zoomOutButton.hidden = !zoomed;
+}
+
+function planetScaleFactor(width) {
+  return width <= 720 ? 0.72 : width <= 1100 ? 0.86 : 1;
+}
+
+// How large the chosen body should appear once zoomed in.
+function zoomScaleFor(node, layout, width, height) {
+  const mobileSpace = ((state.mapSafe || {}).hudTop || height - 200) - 170;
+  const desired = layout.mobile
+    ? Math.max(90, Math.min(width * 0.5, mobileSpace * 0.8))
+    : Math.min(height * 0.36, width * 0.26, 300);
+  const shown = node.size * planetScaleFactor(width);
+  // Saturn's photo includes its rings; size the planet itself, not the rings.
+  return Math.max(1, desired / (node.hasRings ? shown * 1.25 : shown));
+}
+
+function applyCamera(layout, width, height, time) {
+  const camera = state.camera;
+  const dt = camera.lastTime == null ? 16 : clamp(time - camera.lastTime, 0, 100);
+  camera.lastTime = time;
+  camera.progress = Math.min(1, camera.progress + dt / ZOOM_DURATION_MS);
+
+  const target = camera.targetId ? layout.nodes.get(camera.targetId) : null;
+  const pivot = target ? { x: target.x, y: target.y } : { x: layout.sun.x, y: layout.sun.y };
+  // Zoomed in, the planet sits in the clear space: on phones between the Back
+  // button and the selection card; on wider screens right of centre.
+  const safe = state.mapSafe || {};
+  const anchor = target
+    ? layout.mobile
+      ? { x: width / 2, y: (150 + (safe.hudTop || height - 200) - 12) / 2 }
+      : { x: width * 0.6, y: (layout.top + layout.bottom) / 2 }
+    : pivot;
+  const targetZoom = target ? zoomScaleFor(target, layout, width, height) : 1;
+  const from = camera.from;
+  const eased = easeInOutCubic(camera.progress);
+
+  // Where the pivot sits on screen under the starting camera.
+  const startX = from.ax + (pivot.x - from.fx) * from.k;
+  const startY = from.ay + (pivot.y - from.fy) * from.k;
+  const zoom = Math.exp(Math.log(from.k) + (Math.log(targetZoom) - Math.log(from.k)) * eased);
+
+  camera.current = {
+    ax: startX + (anchor.x - startX) * eased,
+    ay: startY + (anchor.y - startY) * eased,
+    fx: pivot.x,
+    fy: pivot.y,
+    k: zoom,
+  };
+
+  const { ax, ay, fx, fy, k } = camera.current;
+  const factor = planetScaleFactor(width);
+  const toScreenX = (x) => ax + (x - fx) * k;
+  const toScreenY = (y) => ay + (y - fy) * k;
+
+  layout.sun = { x: toScreenX(layout.sun.x), y: toScreenY(layout.sun.y) };
+  layout.nodes.forEach((node) => {
+    node.x = toScreenX(node.x);
+    node.y = toScreenY(node.y);
+    node.orbitX *= k;
+    node.orbitY *= k;
+    node.size *= factor * k;
+  });
+  layout.zoom = k;
+}
+
+function initializeZoomControls() {
+  elements.zoomOutButton.addEventListener("click", zoomOut);
+
+  // Clicking empty space on the map zooms back out.
+  elements.mapOverlay.addEventListener("click", (event) => {
+    if (event.target === elements.mapOverlay) {
+      zoomOut();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !elements.imageDialog.open) {
+      zoomOut();
+    }
+  });
+}
+
+/* ---------- Planet facts ---------- */
+
+const KM_PER_AU = 149.6e6;
+
+const NODE_FACTS = {
+  mercury: [["Diameter", "4,879 km"], ["Day", "176 Earth days"], ["Year", "88 Earth days"]],
+  venus: [["Diameter", "12,104 km"], ["Day", "117 Earth days"], ["Year", "225 Earth days"]],
+  earth: [["Diameter", "12,742 km"], ["Day", "24 hours"], ["Year", "365 days"]],
+  moon: [["Diameter", "3,475 km"], ["From Earth", "384,400 km"], ["Orbit", "27.3 days"]],
+  mars: [["Diameter", "6,779 km"], ["Day", "24 h 40 min"], ["Year", "687 Earth days"]],
+  jupiter: [["Diameter", "139,820 km"], ["Day", "9 h 56 min"], ["Year", "11.9 Earth years"]],
+  saturn: [["Diameter", "116,460 km"], ["Day", "10 h 33 min"], ["Year", "29.4 Earth years"]],
+  uranus: [["Diameter", "50,724 km"], ["Day", "17 h 14 min"], ["Year", "84 Earth years"]],
+  neptune: [["Diameter", "49,244 km"], ["Day", "16 h 6 min"], ["Year", "165 Earth years"]],
+  orion: [["Type", "Star-forming nebula"]],
+  pillars: [["Type", "Columns of gas and dust"]],
+  andromeda: [["Type", "Spiral galaxy"]],
+};
+
+function nodeFacts(node) {
+  const facts = [];
+
+  if (node.au) {
+    facts.push(["From the Sun", `${node.au.toFixed(2)} AU · ${Math.round((node.au * KM_PER_AU) / 1e6).toLocaleString()}M km`]);
+  } else if (node.realm === "deep") {
+    facts.push(["Distance", node.distance]);
+  }
+
+  return facts.concat(NODE_FACTS[node.id] || []);
+}
+
+function renderNodeFacts(node) {
+  elements.selectionFacts.innerHTML = nodeFacts(node)
+    .map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`)
+    .join("");
+}
+
 /* ---------- Orrery layout ---------- */
 
 // Orbit radii blend even steps with sqrt(real distance): the inner planets
@@ -463,6 +651,8 @@ function measureMapSafeArea() {
   state.mapSafe = {
     top: heading ? heading.bottom - frame.top + 28 : 160,
     bottom: hud ? frame.bottom - hud.top + 20 : 160,
+    // Where the selection card starts, for placing a zoomed-in planet.
+    hudTop: hud ? hud.top - frame.top : frame.height - 160,
   };
 }
 
@@ -481,7 +671,9 @@ function syncMapLayout(time = 0) {
   }
 
   const layout = computeSolarLayout(frame.width, frame.height, time);
+  applyCamera(layout, frame.width, frame.height, time);
   state.solarLayout = layout;
+  elements.canvasFrame.style.setProperty("--zoom", layout.zoom.toFixed(4));
   const labelLayouts = computeLabelLayout(layout, frame.width, frame.height);
   state.labelLayouts = labelLayouts;
 
@@ -498,6 +690,7 @@ function syncMapLayout(time = 0) {
     mapNode.style.left = `${layoutNode.x}px`;
     mapNode.style.top = `${layoutNode.y}px`;
     mapNode.style.setProperty("--depth-scale", layoutNode.scale.toFixed(3));
+    mapNode.classList.toggle("is-detailed", layoutNode.size > DETAIL_SIZE_PX);
 
     // Light each body from the Sun: the shading layer centres its bright
     // side on the direction of the Sun, so planets show phases as they orbit.
@@ -522,7 +715,7 @@ function syncMapLayout(time = 0) {
 
 // Planets shrink a little on small screens so the inner orbits stay clear.
 function applyPlanetScale(width) {
-  const factor = width <= 720 ? 0.72 : width <= 1100 ? 0.86 : 1;
+  const factor = planetScaleFactor(width);
 
   elements.mapNodes.forEach((mapNode) => {
     const node = nodeDefinitions.find((entry) => entry.id === mapNode.dataset.nodeId);
@@ -664,6 +857,11 @@ function computeLabelLayout(layout, width, height) {
     }
 
     const active = node.id === state.selectedNode.id;
+
+    if (layout.zoom > LABEL_ZOOM_THRESHOLD && node.id !== state.camera.targetId) {
+      labelLayouts.set(node.id, { dx: 0, dy: 0, width: 0, hidden: true });
+      return;
+    }
 
     // A moon sits right beside its planet; label it only when in focus.
     if (node.parentId && node.id !== focusId) {
@@ -890,6 +1088,9 @@ function setSelectedNodeUI(node) {
   elements.selectionTitle.textContent = node.title;
   elements.selectionDescription.textContent = node.description;
   elements.galleryTitle.textContent = `Photos of ${node.title}`;
+  renderNodeFacts(node);
+  // The selection card may have changed height; measure the map again.
+  state.mapSafe = null;
 
   elements.mapNodes.forEach((mapNode) => {
     mapNode.classList.toggle("is-active", mapNode.dataset.nodeId === node.id);
@@ -918,6 +1119,13 @@ async function selectNode(node) {
   }
 
   setSelectedNodeUI(node);
+
+  if (isZoomable(node)) {
+    zoomTo(node.id);
+  } else {
+    zoomOut();
+  }
+
   setStatus(`Scanning NASA archives for ${node.title}...`);
   await loadGallery(node);
 }
@@ -2170,6 +2378,7 @@ async function bootstrap() {
   initializeIssTracker();
   initializeDestinationRail();
   initializeMapNodes();
+  initializeZoomControls();
   initializeApiKeyForm();
   initializeDialog();
   initializeGalleryClicks();

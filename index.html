@@ -30,7 +30,7 @@
       href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=2026-11-20c" />
+    <link rel="stylesheet" href="./styles.css?v=2026-11-20d" />
   </head>
   <body>
     <a class="skip-link" href="#atlas">Skip to the atlas</a>
@@ -203,11 +203,15 @@
 
           <div class="map-overlay" id="mapOverlay"></div>
 
+          <button class="button map-back" id="zoomOutButton" type="button" hidden>
+            <span class="button-arrow button-arrow--back" aria-hidden="true"></span> Back to solar system
+          </button>
+
           <div class="map-top">
             <div>
               <p class="kicker">Interactive solar system</p>
               <h2 id="atlasTitle">Explore the planets</h2>
-              <p class="section-lead">All eight planets in order from the Sun, moving at their relative speeds. Select any planet or deep-sky object to see NASA&rsquo;s photos of it.</p>
+              <p class="section-lead">All eight planets in order from the Sun, moving at their relative speeds. Select a planet to fly in for a closer look and see NASA&rsquo;s photos of it.</p>
             </div>
             <button class="button" id="surpriseButton" type="button">
               Surprise me <span class="button-arrow" aria-hidden="true"></span>
@@ -221,6 +225,7 @@
               <p id="selectionDescription">
                 Rust-red deserts, canyon walls, and dust plains stretching across ancient ground.
               </p>
+              <dl class="hud-facts" id="selectionFacts"></dl>
             </div>
             <div class="hud-status">
               <span class="map-legend">Spacing compressed &middot; 1 AU = Earth&ndash;Sun distance</span>
@@ -288,6 +293,6 @@
       </div>
     </dialog>
 
-    <script type="module" src="./app.js?v=2026-11-20c"></script>
+    <script type="module" src="./app.js?v=2026-11-20d"></script>
   </body>
 </html>

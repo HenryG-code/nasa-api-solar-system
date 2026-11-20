@@ -819,7 +819,7 @@ h3 {
   position: absolute;
   left: var(--sun-x);
   top: var(--sun-y);
-  width: clamp(44px, 4.6vw, 72px);
+  width: calc(clamp(44px, 4.6vw, 72px) * var(--zoom, 1));
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
 }
@@ -911,6 +911,95 @@ h3 {
   pointer-events: auto;
 }
 
+.map-top {
+  transition: opacity 500ms var(--ease), transform 500ms var(--ease);
+}
+
+.canvas-frame.is-zoomed .map-top {
+  opacity: 0;
+  transform: translateY(-12px);
+  pointer-events: none;
+}
+
+.canvas-frame.is-zoomed .map-top > * {
+  pointer-events: none;
+}
+
+.canvas-frame.is-zoomed .map-node--deep-space {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.map-node--deep-space {
+  transition: opacity 400ms ease;
+}
+
+.map-back {
+  position: absolute;
+  top: 7rem;
+  left: var(--gutter);
+  z-index: 6;
+  background: rgba(0, 0, 0, 0.45);
+  animation: fade-in 500ms var(--ease) both;
+}
+
+.map-back[hidden] {
+  display: none;
+}
+
+.button-arrow--back {
+  transform: rotate(-135deg);
+}
+
+.button:hover .button-arrow--back {
+  transform: translateX(-3px) rotate(-135deg);
+}
+
+.map-overlay {
+  cursor: default;
+}
+
+.canvas-frame.is-zoomed .map-overlay {
+  cursor: zoom-out;
+}
+
+.map-node {
+  cursor: zoom-in;
+}
+
+.canvas-frame.is-zoomed .map-node.is-active {
+  cursor: default;
+}
+
+/* Facts for the selected body. */
+.hud-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 1.6rem;
+  margin: 1rem 0 0;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.hud-facts:empty {
+  display: none;
+}
+
+.hud-facts dt {
+  color: var(--faint);
+  font-family: var(--condensed);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.hud-facts dd {
+  margin: 0.1rem 0 0;
+  font-size: 0.98rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .map-node {
   position: absolute;
   z-index: 2;
@@ -934,8 +1023,8 @@ h3 {
 
 .map-node__body {
   position: relative;
-  width: var(--planet-size);
-  height: var(--planet-size);
+  width: calc(var(--planet-size) * var(--zoom, 1));
+  height: calc(var(--planet-size) * var(--zoom, 1));
   border-radius: 50%;
   background: radial-gradient(
     circle at 30% 30%,
@@ -953,6 +1042,7 @@ h3 {
 .map-node--deep-space .map-node__body {
   width: calc(var(--planet-size) * 0.9);
   height: calc(var(--planet-size) * 0.9);
+  transition: opacity 400ms ease;
   background: radial-gradient(
     circle,
     rgba(255, 255, 255, 0.96) 0%,
@@ -974,11 +1064,27 @@ h3 {
 }
 
 /* Planets and the Moon: a cropped NASA photo of each body. */
+/* Sized 106% so the photos' dark edge fringe falls outside the circle. */
 .map-node--textured .map-node__body {
-  background: var(--texture) center / cover no-repeat, var(--planet-color);
+  background: var(--texture) center / 106% no-repeat, var(--planet-color);
   box-shadow:
     0 0 0 0.5px rgba(255, 255, 255, 0.06),
-    0 0 calc(var(--planet-size) * 0.45) var(--atmo, rgba(0, 0, 0, 0));
+    0 0 calc(var(--planet-size) * var(--zoom, 1) * 0.45) var(--atmo, rgba(0, 0, 0, 0));
+}
+
+/* Large on screen (zoomed in): switch to the 480px photo, layered over the
+   small one so there is never a blank frame while it loads. */
+.map-node--textured.is-detailed .map-node__body {
+  background:
+    var(--texture-hi) center / 106% no-repeat,
+    var(--texture) center / 106% no-repeat,
+    var(--planet-color);
+}
+
+.map-node--ringed.is-detailed .map-node__body {
+  background:
+    var(--texture-hi) center / contain no-repeat,
+    var(--texture) center / contain no-repeat;
 }
 
 /* Sunlight: bright on the side facing the Sun (--lx/--ly, set every frame),
@@ -997,13 +1103,12 @@ h3 {
   );
 }
 
-/* Saturn keeps its photographed rings; screen blending drops the black sky. */
+/* Saturn keeps its photographed rings (a transparent PNG). */
 .map-node--ringed .map-node__body {
-  width: calc(var(--planet-size) * 2.37);
+  width: calc(var(--planet-size) * var(--zoom, 1) * 2.37);
   border-radius: 0;
   background: var(--texture) center / contain no-repeat;
   box-shadow: none;
-  mix-blend-mode: screen;
 }
 
 .map-node--ringed .map-node__body::after {
@@ -1081,7 +1186,15 @@ h3 {
   box-shadow:
     0 0 0 1.5px rgba(255, 255, 255, 0.55),
     0 0 0 7px rgba(255, 255, 255, 0.07),
-    0 0 calc(var(--planet-size) * 0.6) var(--atmo, rgba(255, 255, 255, 0.12));
+    0 0 calc(var(--planet-size) * var(--zoom, 1) * 0.6) var(--atmo, rgba(255, 255, 255, 0.12));
+}
+
+/* Zoomed in: no hover ring or scale-up on the planet you are looking at. */
+.canvas-frame.is-zoomed .map-node--textured.is-active .map-node__body {
+  transform: none;
+  box-shadow:
+    0 0 0 0.5px rgba(255, 255, 255, 0.06),
+    0 0 calc(var(--planet-size) * var(--zoom, 1) * 0.35) var(--atmo, rgba(0, 0, 0, 0));
 }
 
 .map-node--ringed:hover .map-node__body,
@@ -1706,6 +1819,18 @@ h3 {
 
   .map-top .button {
     display: none;
+  }
+
+  .map-back {
+    top: 5.5rem;
+  }
+
+  .hud-facts {
+    gap: 0.6rem 1.1rem;
+  }
+
+  .hud-facts dd {
+    font-size: 0.88rem;
   }
 
   .map-node__label {
