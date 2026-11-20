@@ -1,0 +1,6 @@
+.agents/
+.git-empty-backup/
+node_modules/
+*.log
+Thumbs.db
+.claude/
