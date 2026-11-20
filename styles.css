@@ -42,12 +42,13 @@ body {
   overflow-x: hidden;
 }
 
-/* Fine film grain for a less flat, more photographic dark surface */
+/* Fine film grain for a less flat, more photographic dark surface.
+   It sits behind all content (z-index -1) so text and images stay crisp. */
 body::after {
   content: "";
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: -1;
   pointer-events: none;
   opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -286,10 +287,29 @@ h3 {
 }
 
 .nav-badge {
-  color: var(--faint);
-  font-size: 0.74rem;
-  letter-spacing: 0.18em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.42rem 0.85rem 0.42rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(10, 12, 20, 0.55);
+  backdrop-filter: blur(12px);
+  color: rgba(243, 240, 232, 0.82);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.nav-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 8px rgba(227, 197, 138, 0.8);
 }
 
 /* ---------- Hero ---------- */
@@ -392,9 +412,10 @@ h3 {
   bottom: 1.4rem;
   max-width: 40ch;
   margin: 0;
-  color: var(--faint);
+  color: rgba(243, 240, 232, 0.55);
   font-size: 0.74rem;
   text-align: right;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.8);
 }
 
 /* ---------- Layout ---------- */

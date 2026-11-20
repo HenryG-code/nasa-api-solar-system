@@ -5,15 +5,15 @@ const API_STORAGE_KEY = "universe-atlas:nasa-api-key";
 const GALLERY_PAGE_SIZE = 12;
 const LIBRARY_PAGE_SIZE = 100;
 
-// Iconic NASA archive images (all with large renditions) used for the hero
-// backdrop and as the spotlight when the APOD API is down or rate limited.
+// Iconic NASA archive images used for the hero backdrop and as the spotlight
+// when the APOD API is down or rate limited. Each has a JPEG original of
+// 3,400px+ so it stays sharp full-screen on 4K and retina displays.
 const SPOTLIGHT_FALLBACKS = [
-  "carina_nebula",
-  "GSFC_20171208_Archive_e000842",
-  "PIA03606",
-  "GSFC_20171208_Archive_e001651",
-  "southern_ring_nebula",
-  "GSFC_20171208_Archive_e001935",
+  "PIA03515", // All Pillars Point to Eta (Carina Nebula)
+  "PIA23647", // Tarantula Nebula, Spitzer 3-color
+  "PIA03606", // Most Detailed Image of the Crab Nebula
+  "PIA14415", // A New View of the Tarantula Nebula
+  "PIA09178", // Comets Kick up Dust in Helix Nebula
 ];
 
 // Images that are on-topic but usually less striking: diagrams, renders, slides.
@@ -868,6 +868,10 @@ function renderApod(apod) {
   const title = apod.title || "Astronomy Picture of the Day";
   const mediaUrl = safeHttpUrl(apod.url);
   const previewUrl = apod.media_type === "video" ? safeHttpUrl(apod.thumbnail_url) : mediaUrl;
+  const hdUrl = apod.media_type === "image" ? safeHttpUrl(apod.hdurl) : "";
+  // APOD's standard image is ~1000px wide; big or high-DPI screens need the HD one.
+  const needsHd = (minDevicePixels) =>
+    Boolean(hdUrl) && window.innerWidth * window.devicePixelRatio > minDevicePixels;
 
   elements.apodEyebrow.textContent = "Astronomy Picture of the Day";
   elements.apodMeta.textContent = [formatDate(apod.date), apod.copyright && `© ${apod.copyright.trim()}`]
@@ -885,14 +889,15 @@ function renderApod(apod) {
       title,
     )}" allow="fullscreen" loading="lazy"></iframe>`;
   } else if (previewUrl) {
-    elements.apodMedia.innerHTML = `<img src="${escapeAttribute(previewUrl)}" alt="${escapeAttribute(title)}" />`;
+    const panelUrl = needsHd(1100) ? hdUrl : previewUrl;
+    elements.apodMedia.innerHTML = `<img src="${escapeAttribute(panelUrl)}" alt="${escapeAttribute(title)}" />`;
   } else {
     elements.apodMedia.innerHTML =
       '<div class="media-placeholder"><span>NASA returned this feature without preview media.</span></div>';
   }
 
   if (previewUrl) {
-    setHeroBackdrop(previewUrl, `Backdrop: ${title} (NASA APOD)`);
+    setHeroBackdrop(needsHd(1000) ? hdUrl : previewUrl, `Backdrop: ${title} (NASA APOD)`);
   } else {
     loadFallbackSpotlight({ backdropOnly: true });
   }
@@ -916,14 +921,14 @@ async function loadFallbackSpotlight({ backdropOnly = false } = {}) {
     const payload = await response.json();
     const item = payload.collection?.items?.[0];
     const metadata = item?.data?.[0];
-    const images = pickImageRenditions(item?.links || []);
+    const images = pickImageRenditions(item?.links || [], HERO_LIMITS);
 
     if (!metadata || !images) {
       throw new Error("Spotlight fallback returned no image");
     }
 
     const title = metadata.title || "From the NASA archive";
-    setHeroBackdrop(images.full, `Backdrop: ${title} (NASA)`);
+    setHeroBackdrop(images, `Backdrop: ${title} (NASA)`);
 
     if (backdropOnly) {
       return;
@@ -938,7 +943,11 @@ async function loadFallbackSpotlight({ backdropOnly = false } = {}) {
       stripHtml(metadata.description || metadata.description_508 || ""),
       620,
     );
-    elements.apodMedia.innerHTML = `<img src="${escapeAttribute(images.full)}" alt="${escapeAttribute(title)}" />`;
+    elements.apodMedia.innerHTML = imageMarkup(
+      images,
+      `(max-width: 1024px) ${coverSize("calc(100vw - 32px)", 360, images.aspect)}, ${coverSize("715px", 670, images.aspect)}`,
+      title,
+    );
     elements.apodLink.href = `https://images.nasa.gov/details/${encodeURIComponent(nasaId)}`;
     elements.apodLink.textContent = "View in NASA Library";
   } catch (error) {
@@ -958,14 +967,27 @@ async function loadFallbackSpotlight({ backdropOnly = false } = {}) {
   }
 }
 
-function setHeroBackdrop(src, credit) {
+// Accepts either a rendition set (archive images) or a plain URL (APOD).
+function setHeroBackdrop(source, credit) {
   const image = elements.heroBackdrop;
 
   image.onload = () => {
     image.classList.add("is-loaded");
     elements.heroCredit.textContent = credit;
   };
-  image.src = src;
+
+  if (typeof source === "string") {
+    image.removeAttribute("srcset");
+    image.src = source;
+    return;
+  }
+
+  if (source.srcset) {
+    image.sizes = coverSize("100vw", Math.min(window.innerHeight, 980), source.aspect);
+    image.srcset = source.srcset;
+  }
+
+  image.src = source.src;
 }
 
 /* ---------- Gallery ---------- */
@@ -988,6 +1010,7 @@ async function loadGallery(node) {
     }
 
     state.galleryShown = Math.min(GALLERY_PAGE_SIZE, state.galleryItems.length);
+    arrangeForLayout(0, state.galleryShown);
     renderGallery();
     setStatus(`Locked onto ${node.title}`);
   } catch (error) {
@@ -1028,6 +1051,7 @@ async function showMoreGallery() {
 
     const previous = state.galleryShown;
     state.galleryShown = Math.min(previous + GALLERY_PAGE_SIZE, state.galleryItems.length);
+    arrangeForLayout(previous, state.galleryShown);
     renderGallery(undefined, previous);
   } catch (error) {
     console.error(error);
@@ -1132,6 +1156,11 @@ function normalizeLibraryItem(item, node) {
     return null;
   }
 
+  // Too small to look good anywhere in the layout.
+  if (images.maxWidth && images.maxWidth < MIN_USABLE_WIDTH) {
+    return null;
+  }
+
   const nasaId = metadata.nasa_id;
   const rawDescription = stripHtml(metadata.description || metadata.description_508 || "");
   const keywords = Array.isArray(metadata.keywords) ? metadata.keywords.join(" ") : "";
@@ -1167,16 +1196,18 @@ function normalizeLibraryItem(item, node) {
   score += countTermMatches(searchableText, node.preferredTerms || []) * 8;
   score += includesAnyTerm(titleAndKeywords, requiredTerms) ? 12 : 0;
   score -= countTermMatches(searchableText, GENERIC_PENALTY_TERMS) * 10;
-  score += images.hasLarge ? 6 : 0;
+  score += images.maxWidth >= 1600 ? 8 : images.maxWidth >= 1200 ? 4 : -10;
 
   return {
-    id: nasaId || images.card,
+    id: nasaId || images.src,
     title: metadata.title || "Untitled NASA image",
     description:
       truncateCopy(rawDescription, 900) || "No description was included with this NASA archive image.",
     meta: [formatYear(metadata.date_created), metadata.center].filter(Boolean).join(" · "),
-    imageUrl: images.card,
+    images,
+    imageUrl: images.src,
     fullImageUrl: images.full,
+    maxWidth: images.maxWidth,
     libraryUrl: nasaId
       ? `https://images.nasa.gov/details/${encodeURIComponent(nasaId)}`
       : "https://images.nasa.gov/",
@@ -1185,25 +1216,124 @@ function normalizeLibraryItem(item, node) {
 }
 
 // NASA lists several renditions per asset (~thumb, ~small, ~medium, ~large,
-// ~orig). Cards use a medium-weight one; the dialog uses the largest web-sized one.
-function pickImageRenditions(links) {
+// ~orig), each with its pixel width and file size. Build a srcset from every
+// web-friendly rendition so the browser picks one sharp enough for the
+// screen's size and pixel density.
+const MAX_SRCSET_BYTES = 3.5 * 1024 * 1024;
+const MAX_PNG_BYTES = 1.5 * 1024 * 1024;
+const MIN_USABLE_WIDTH = 640;
+
+// Hero-sized images may use bigger files; srcset still serves phones small ones.
+const HERO_LIMITS = { maxBytes: 8 * 1024 * 1024, maxPngBytes: 6 * 1024 * 1024 };
+
+function pickImageRenditions(links, { maxBytes = MAX_SRCSET_BYTES, maxPngBytes = MAX_PNG_BYTES } = {}) {
   const imageLinks = links.filter((link) => link.render === "image" && link.href);
 
   if (!imageLinks.length) {
     return null;
   }
 
-  const byVariant = (variant) =>
-    imageLinks.find((link) => link.href.toLowerCase().includes(`~${variant}.`))?.href;
-  const fallback = imageLinks[0].href;
-  const large = byVariant("large");
-  const medium = byVariant("medium");
+  const byWidth = new Map();
+
+  imageLinks.forEach((link) => {
+    const href = link.href;
+    const lower = href.toLowerCase();
+    const width = Number(link.width) || 0;
+    const height = Number(link.height) || 0;
+    const size = Number(link.size) || 0;
+    const isPng = lower.endsWith(".png");
+    const webFriendly =
+      /\.(jpe?g|png|webp)$/.test(lower) &&
+      width > 0 &&
+      size > 0 &&
+      size <= (isPng ? maxPngBytes : maxBytes);
+
+    // thumb and small are often the same file; keep the first per width.
+    if (webFriendly && !byWidth.has(width)) {
+      byWidth.set(width, { url: href, width, height });
+    }
+  });
+
+  const candidates = [...byWidth.values()].sort((first, second) => first.width - second.width);
+
+  if (!candidates.length) {
+    // Very old records lack width data; fall back to the named renditions.
+    const byVariant = (variant) =>
+      imageLinks.find((link) => link.href.toLowerCase().includes(`~${variant}.`))?.href;
+    const url = byVariant("large") || byVariant("medium") || imageLinks[0].href;
+
+    return { srcset: "", src: url, full: url, maxWidth: 0, aspect: 1.5 };
+  }
+
+  const largest = candidates[candidates.length - 1];
+  // Default src for browsers without srcset support: a mid-size rendition.
+  const mid = candidates.find((candidate) => candidate.width >= 1000) || largest;
 
   return {
-    card: medium || byVariant("small") || fallback,
-    full: large || medium || byVariant("orig") || fallback,
-    hasLarge: Boolean(large || medium),
+    srcset: candidates.map((candidate) => `${candidate.url} ${candidate.width}w`).join(", "),
+    src: mid.url,
+    full: largest.url,
+    maxWidth: largest.width,
+    aspect: largest.height ? largest.width / largest.height : 1.5,
   };
+}
+
+// An object-fit: cover image must be at least as wide as its box AND tall
+// enough to fill it, so the width the browser should fetch is
+// max(box width, box height x image aspect ratio).
+function coverSize(boxWidth, boxHeight, aspect) {
+  return `max(${boxWidth}, ${Math.round(boxHeight * aspect)}px)`;
+}
+
+// Gallery tile boxes per layout slot (see .gallery-card rules in styles.css).
+function gallerySizes(index, aspect) {
+  const slot = index % 12;
+  const desktop =
+    slot === 0
+      ? coverSize("825px", 690, aspect)
+      : slot === 1
+        ? coverSize("404px", 690, aspect)
+        : [5, 6, 10, 11].includes(slot)
+          ? coverSize("614px", 455, aspect)
+          : coverSize("404px", 455, aspect);
+  const tablet =
+    slot === 0
+      ? coverSize("calc(100vw - 32px)", 455, aspect)
+      : coverSize("calc(50vw - 23px)", 455, aspect);
+  const mobile = coverSize("calc(100vw - 32px)", 260, aspect);
+
+  return `(max-width: 720px) ${mobile}, (max-width: 1024px) ${tablet}, ${desktop}`;
+}
+
+// The two big tiles at the start of each 12-image block need high-resolution
+// sources; swap a sharper not-yet-shown image into those slots when needed.
+const SLOT_MIN_WIDTH = { 0: 1600, 1: 1200 };
+
+function arrangeForLayout(from, to) {
+  const items = state.galleryItems;
+
+  for (let index = from; index < to; index += 1) {
+    const required = SLOT_MIN_WIDTH[index % 12];
+
+    if (!required || items[index].maxWidth >= required) {
+      continue;
+    }
+
+    const swapIndex = items.findIndex(
+      (item, candidateIndex) => candidateIndex > index && item.maxWidth >= required,
+    );
+
+    if (swapIndex > -1) {
+      [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
+    }
+  }
+}
+
+function imageMarkup(images, sizes, alt, extra = "") {
+  const srcset = images.srcset
+    ? ` srcset="${escapeAttribute(images.srcset)}" sizes="${sizes}"`
+    : "";
+  return `<img src="${escapeAttribute(images.src)}"${srcset} alt="${escapeAttribute(alt)}"${extra} />`;
 }
 
 function renderGallerySkeleton() {
@@ -1236,7 +1366,7 @@ function renderGallery(message, appendFrom = 0) {
       return `
         <article class="gallery-card" style="animation-delay:${offset * 60}ms">
           <button type="button" data-gallery-index="${index}" aria-label="${escapeAttribute(item.title)}">
-            <img src="${escapeAttribute(item.imageUrl)}" alt="" loading="lazy" decoding="async" />
+            ${imageMarkup(item.images, gallerySizes(index, item.images.aspect), "", ' loading="lazy" decoding="async"')}
           </button>
           <div class="gallery-copy">
             ${item.meta ? `<p class="meta-line">${escapeHtml(item.meta)}</p>` : ""}
@@ -1274,11 +1404,13 @@ function openDialog(index) {
   }
 
   state.dialogIndex = index;
-  elements.dialogImage.src = item.imageUrl;
+  const cardImage = elements.galleryGrid.querySelector(`[data-gallery-index="${index}"] img`);
+  elements.dialogImage.removeAttribute("srcset");
+  elements.dialogImage.src = cardImage?.currentSrc || item.imageUrl;
   elements.dialogImage.alt = item.title;
 
   // Show the already-cached card image instantly, then swap in the larger one.
-  if (item.fullImageUrl !== item.imageUrl) {
+  if (item.fullImageUrl !== elements.dialogImage.src) {
     const fullImage = new Image();
     fullImage.onload = () => {
       if (state.dialogIndex === index) {
