@@ -6,80 +6,100 @@
     <title>Universe Atlas</title>
     <meta
       name="description"
-      content="Explore a glowing astronomy map and pull glorious imagery from NASA."
+      content="An interactive atlas of the cosmos. Move across the solar system and deep sky, and pull spectacular imagery straight from NASA's archive."
+    />
+    <meta name="theme-color" content="#04050a" />
+    <meta property="og:title" content="Universe Atlas" />
+    <meta
+      property="og:description"
+      content="An interactive atlas of the cosmos, powered by NASA's open image archive."
+    />
+    <meta property="og:image" content="./preview.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='6' fill='%23e3c58a'/%3E%3Cellipse cx='16' cy='16' rx='14' ry='5' fill='none' stroke='%23e3c58a' stroke-width='1.5' transform='rotate(-20 16 16)'/%3E%3C/svg%3E"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://images-api.nasa.gov" />
+    <link rel="preconnect" href="https://images-assets.nasa.gov" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Space+Grotesk:wght@400;500;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Manrope:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="page-shell">
-      <header class="hero-grid">
-        <section class="intro-panel">
-          <p class="eyebrow">NASA-powered universe explorer</p>
-          <h1>Chart the cosmos and dive into spectacular space imagery.</h1>
-          <p class="lead">
-            The map below follows the solar system's orbital corridor, then opens out
-            into deep-sky gateways. Move outward from the Sun or jump beyond the
-            planets to explore curated NASA imagery across the wider universe.
+    <a class="skip-link" href="#atlas">Skip to the atlas</a>
+
+    <header class="site-nav" id="siteNav">
+      <a class="brand" href="#top" aria-label="Universe Atlas home">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+          <circle cx="16" cy="16" r="5.5" />
+          <ellipse cx="16" cy="16" rx="14" ry="5" transform="rotate(-20 16 16)" />
+        </svg>
+        <span>Universe Atlas</span>
+      </a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#spotlight">Spotlight</a>
+        <a href="#atlas">Atlas</a>
+        <a href="#gallery">Archive</a>
+      </nav>
+      <span class="nav-badge">NASA open data</span>
+    </header>
+
+    <section class="hero" id="top">
+      <div class="hero-backdrop" aria-hidden="true">
+        <img id="heroBackdrop" alt="" />
+      </div>
+      <div class="hero-content">
+        <p class="eyebrow">An interactive atlas of the cosmos</p>
+        <h1>Chart the cosmos, <em>one frame at a time.</em></h1>
+        <p class="lead">
+          Drift along the orbits of the solar system, then step past Neptune into
+          nebulae and galaxies. Every destination opens a curated stream of imagery
+          from NASA's own archive.
+        </p>
+        <div class="hero-actions">
+          <a class="button button--primary" href="#atlas">Explore the atlas</a>
+          <a class="button button--ghost" href="#spotlight">Today's spotlight</a>
+        </div>
+        <dl class="hero-stats">
+          <div>
+            <dt>Destinations</dt>
+            <dd id="statDestinations">11</dd>
+          </div>
+          <div>
+            <dt>Archive images</dt>
+            <dd>140k+</dd>
+          </div>
+          <div>
+            <dt>Spotlight</dt>
+            <dd>Daily</dd>
+          </div>
+        </dl>
+      </div>
+      <p class="hero-credit" id="heroCredit"></p>
+    </section>
+
+    <main class="page-shell">
+      <section class="spotlight" id="spotlight" aria-labelledby="apodTitle">
+        <div class="featured-media" id="apodMedia">
+          <div class="media-placeholder"><span class="loader" aria-hidden="true"></span></div>
+        </div>
+        <div class="featured-copy">
+          <p class="eyebrow" id="apodEyebrow">Astronomy Picture of the Day</p>
+          <p class="meta-line" id="apodMeta"></p>
+          <h2 id="apodTitle">Preparing today's window into space.</h2>
+          <p id="apodDescription" class="clamp-copy">
+            NASA's daily story from the sky will appear here in a moment.
           </p>
-
-          <form class="key-form" id="apiKeyForm">
-            <label for="apiKeyInput">NASA API key</label>
-            <div class="key-row">
-              <input
-                id="apiKeyInput"
-                name="apiKey"
-                type="text"
-                autocomplete="off"
-                spellcheck="false"
-                placeholder="Leave blank to use DEMO_KEY"
-              />
-              <button type="submit">Save key</button>
-            </div>
-            <p class="helper-copy">
-              APOD uses this key. The NASA Image Library gallery works without one.
-            </p>
-          </form>
-
-          <div class="legend-row">
-            <div class="legend-card">
-              <span class="legend-dot"></span>
-              <div>
-                <strong>Worlds and gateways</strong>
-                <p>Follow the planets, then branch out to nebulae and galaxies.</p>
-              </div>
-            </div>
-            <div class="legend-card">
-              <span class="legend-dot legend-dot--amber"></span>
-              <div>
-                <strong>Daily spotlight</strong>
-                <p>NASA APOD rotates the featured cosmic story each day.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <article class="featured-card">
-          <div class="featured-media" id="apodMedia">
-            <div class="media-placeholder">
-              <span>Loading NASA spotlight...</span>
-            </div>
-          </div>
-          <div class="featured-copy">
-            <p class="eyebrow">Astronomy Picture of the Day</p>
-            <h2 id="apodTitle">Preparing today's featured window into space.</h2>
-            <p id="apodDescription">
-              Once the APOD request returns, this panel will highlight NASA's daily
-              story from the sky.
-            </p>
+          <div class="featured-actions">
             <a
               id="apodLink"
-              class="featured-link"
+              class="button button--ghost"
               href="https://apod.nasa.gov/apod/astropix.html"
               target="_blank"
               rel="noreferrer"
@@ -87,76 +107,119 @@
               Open NASA APOD
             </a>
           </div>
-        </article>
-      </header>
 
-      <main>
-        <section class="map-section">
-          <div class="section-heading">
+          <details class="key-details">
+            <summary>Use your own NASA API key</summary>
+            <form class="key-form" id="apiKeyForm">
+              <label for="apiKeyInput" class="visually-hidden">NASA API key</label>
+              <div class="key-row">
+                <input
+                  id="apiKeyInput"
+                  name="apiKey"
+                  type="text"
+                  autocomplete="off"
+                  spellcheck="false"
+                  placeholder="Leave blank to use DEMO_KEY"
+                />
+                <button type="submit" class="button button--small">Save</button>
+              </div>
+              <p class="helper-copy">
+                The daily spotlight uses this key; a free one from
+                <a href="https://api.nasa.gov/" target="_blank" rel="noreferrer">api.nasa.gov</a>
+                avoids shared rate limits. The image archive needs no key.
+              </p>
+            </form>
+          </details>
+        </div>
+      </section>
+
+      <section class="map-section" id="atlas">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">The atlas</p>
+            <h2>Cruise the ecliptic, <em>then leave it behind.</em></h2>
+          </div>
+          <button class="button button--ghost" id="surpriseButton" type="button">
+            <span aria-hidden="true">&#10022;</span> Surprise me
+          </button>
+        </div>
+
+        <div class="destination-rail" id="destinationRail" role="toolbar" aria-label="Destinations"></div>
+
+        <div class="canvas-frame">
+          <canvas id="starfield" aria-hidden="true"></canvas>
+          <div class="canvas-glow" aria-hidden="true"></div>
+          <div class="solar-reference" id="solarReference" aria-hidden="true">
+            <div class="sun-anchor">
+              <span class="sun-corona"></span>
+              <span class="sun-core"></span>
+              <span class="sun-label">Sun</span>
+            </div>
+            <p class="orbit-note">Artistic scale</p>
+          </div>
+
+          <div class="map-overlay" id="mapOverlay"></div>
+
+          <div class="map-hud">
             <div>
-              <p class="eyebrow">Interactive solar system and deep space map</p>
-              <h2>Cruise the ecliptic, then jump beyond the solar system.</h2>
+              <p class="eyebrow" id="selectionKicker">Selected destination</p>
+              <h3 id="selectionTitle">Mars</h3>
+              <p id="selectionDescription">
+                Rust-red deserts, canyon walls, and dust plains stretching across ancient ground.
+              </p>
             </div>
-            <button class="ghost-button" id="surpriseButton" type="button">
-              Surprise me
-            </button>
-          </div>
-
-          <div class="canvas-frame">
-            <canvas id="starfield" aria-hidden="true"></canvas>
-            <div class="canvas-glow" aria-hidden="true"></div>
-            <div class="solar-reference" id="solarReference" aria-hidden="true">
-              <div class="sun-anchor">
-                <span class="sun-corona"></span>
-                <span class="sun-core"></span>
-                <span class="sun-label">Sun</span>
-              </div>
-              <p class="orbit-note">Solar system and deep-sky view - artistic scale</p>
-            </div>
-
-            <div class="map-overlay" id="mapOverlay"></div>
-
-            <div class="map-hud">
-              <div>
-                <p class="eyebrow">Selected destination</p>
-                <h3 id="selectionTitle">Mars</h3>
-                <p id="selectionDescription">
-                  Rust-red deserts, canyon walls, and rover tracks across ancient ground.
-                </p>
-              </div>
-              <div class="hud-status">
-                <span id="statusPill">Initializing NASA feed...</span>
-                <span id="resultCount">0 images loaded</span>
-              </div>
+            <div class="hud-status">
+              <span id="statusPill">Initializing NASA feed...</span>
+              <span id="resultCount">0 images</span>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section class="gallery-section">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">NASA image stream</p>
-              <h2>Collected frames from your current world and orbit.</h2>
-            </div>
+      <section class="gallery-section" id="gallery">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">From the NASA archive</p>
+            <h2 id="galleryTitle">Mars, <em>in frames.</em></h2>
           </div>
+        </div>
 
-          <div class="gallery-grid" id="galleryGrid" aria-live="polite"></div>
-        </section>
-      </main>
-    </div>
+        <div class="gallery-grid" id="galleryGrid" aria-live="polite"></div>
 
-    <dialog class="image-dialog" id="imageDialog">
+        <div class="gallery-more">
+          <button class="button button--ghost" id="loadMoreButton" type="button" hidden>
+            Load more images
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        Imagery courtesy of NASA via the
+        <a href="https://images.nasa.gov/" target="_blank" rel="noreferrer">NASA Image and Video Library</a>
+        and <a href="https://apod.nasa.gov/" target="_blank" rel="noreferrer">APOD</a>.
+        Universe Atlas is not affiliated with NASA.
+      </p>
+    </footer>
+
+    <dialog class="image-dialog" id="imageDialog" aria-labelledby="dialogTitle">
       <button class="dialog-close" id="dialogClose" type="button" aria-label="Close">
-        Close
+        &#10005;
       </button>
       <div class="dialog-layout">
-        <img id="dialogImage" alt="" />
+        <div class="dialog-media">
+          <img id="dialogImage" alt="" />
+          <button class="dialog-nav dialog-nav--prev" id="dialogPrev" type="button" aria-label="Previous image">&#8592;</button>
+          <button class="dialog-nav dialog-nav--next" id="dialogNext" type="button" aria-label="Next image">&#8594;</button>
+        </div>
         <div class="dialog-copy">
-          <p class="eyebrow">NASA archive detail</p>
+          <p class="eyebrow">NASA archive</p>
+          <p class="meta-line" id="dialogMeta"></p>
           <h3 id="dialogTitle"></h3>
           <p id="dialogDescription"></p>
-          <a id="dialogLink" class="featured-link" href="#" target="_blank" rel="noreferrer">
-            Open in NASA Library
+          <a id="dialogLink" class="button button--ghost" href="#" target="_blank" rel="noreferrer">
+            View in NASA Library
           </a>
         </div>
       </div>

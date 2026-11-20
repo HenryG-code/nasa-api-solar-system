@@ -8,10 +8,12 @@ A cinematic, NASA-powered space explorer built with plain HTML, CSS, and JavaScr
 
 ## Highlights
 
+- Cinematic full-bleed hero backed by the day's NASA spotlight image
 - Rotating solar-system composition with a starfield canvas stretched across the full map
-- Clickable worlds and deep-space destinations that trigger NASA image searches
-- NASA APOD spotlight panel for the daily featured astronomy image
-- Filtering tuned to favor planets, nebulae, galaxies, and other space imagery over rover-heavy results
+- Destination rail plus clickable worlds and deep-space waypoints that trigger NASA image searches
+- Editorial image gallery with "Load more" paging through NASA's archive, de-duplicated and ranked for relevance
+- Full-size image viewer with previous/next navigation (arrow keys work too)
+- NASA APOD spotlight, with an automatic fallback to iconic archive images when the APOD API is unavailable
 - Lightweight static setup with no framework and no build step
 
 ## Experience Flow
@@ -43,6 +45,16 @@ npm start
 
 Then open [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
+## Deploy (Cloudflare Pages)
+
+The site is fully static, so Cloudflare Pages serves the repository as-is:
+
+- **Framework preset:** None
+- **Build command:** _(leave empty)_
+- **Build output directory:** `/`
+
+`_headers` adds basic security and cache headers on Pages. Every push to `main` redeploys production; other branches get preview URLs.
+
 ## API Key Notes
 
 - The app falls back to NASA's `DEMO_KEY` for APOD.
@@ -53,6 +65,7 @@ Then open [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
 ```text
 .
+|-- _headers            # Cloudflare Pages response headers
 |-- app.js              # Map logic, NASA requests, gallery rendering, animation
 |-- capture-preview.mjs # Local screenshot helper for README visuals
 |-- index.html          # App shell and layout
@@ -69,5 +82,5 @@ Instead of presenting NASA data as a list of links, Universe Atlas treats the so
 
 - Add more destinations such as Uranus, Europa, Titan, and the Carina Nebula
 - Offer a timeline or era filter for NASA archive results
-- Add keyboard navigation and richer accessibility hints for the map
-- Ship a deployed version with a persistent saved destination history
+- Shareable links to a destination (e.g. `#saturn`)
+- Persistent saved destination history

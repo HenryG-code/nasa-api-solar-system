@@ -2,6 +2,43 @@ const NASA_APOD_ENDPOINT = "https://api.nasa.gov/planetary/apod";
 const NASA_LIBRARY_ENDPOINT = "https://images-api.nasa.gov/search";
 const DEFAULT_API_KEY = "DEMO_KEY";
 const API_STORAGE_KEY = "universe-atlas:nasa-api-key";
+const GALLERY_PAGE_SIZE = 12;
+const LIBRARY_PAGE_SIZE = 100;
+
+// Iconic NASA archive images (all with large renditions) used for the hero
+// backdrop and as the spotlight when the APOD API is down or rate limited.
+const SPOTLIGHT_FALLBACKS = [
+  "carina_nebula",
+  "GSFC_20171208_Archive_e000842",
+  "PIA03606",
+  "GSFC_20171208_Archive_e001651",
+  "southern_ring_nebula",
+  "GSFC_20171208_Archive_e001935",
+];
+
+// Images that are on-topic but usually less striking: diagrams, renders, slides.
+const GENERIC_PENALTY_TERMS = [
+  "illustration",
+  "artist's concept",
+  "artist concept",
+  "artist's rendering",
+  "animation",
+  "diagram",
+  "chart",
+  "graph",
+  "infographic",
+  "poster",
+  "logo",
+  "model",
+  "spacecraft",
+  "map",
+  "estimated",
+  "simulated",
+  "simulation",
+  "plot",
+  "dosage",
+  "history of",
+];
 
 const SOLAR_SYSTEM_REFERENCE = {
   x: 0.5,
@@ -45,6 +82,10 @@ const GENERIC_EXCLUDED_TERMS = [
   "space station",
   "mission patch",
   "countdown",
+  "kennedy space center",
+  "ksc",
+  "payload",
+  "clean room",
 ];
 
 const nodeDefinitions = [
@@ -52,7 +93,7 @@ const nodeDefinitions = [
     id: "mercury",
     title: "Mercury",
     kicker: "Sun-scorched world",
-    query: "Mercury planet global mosaic NASA",
+    queries: ["Mercury MESSENGER", "Mercury planet"],
     description: "Scorched cliffs and shadowed craters closest to the Sun.",
     orbit: 0.11,
     angle: -58,
@@ -61,13 +102,14 @@ const nodeDefinitions = [
     color: "#b8ac97",
     labelDx: 18,
     labelDy: -72,
-    preferredTerms: ["mercury", "planet", "surface", "mosaic", "crater", "global"],
+    preferredTerms: ["mercury", "planet", "surface", "mosaic", "crater", "global", "messenger"],
+    excludedTerms: ["mercury program", "mercury-redstone", "mercury-atlas", "freedom 7", "friendship 7"],
   },
   {
     id: "venus",
     title: "Venus",
     kicker: "Cloud-shrouded",
-    query: "Venus planet cloud tops NASA",
+    queries: ["Venus planet", "Venus Magellan"],
     description: "Sulfur clouds conceal a volcanic world glowing with trapped heat.",
     orbit: 0.17,
     angle: 20,
@@ -76,13 +118,14 @@ const nodeDefinitions = [
     color: "#d7be93",
     labelDx: -156,
     labelDy: 10,
-    preferredTerms: ["venus", "planet", "cloud", "global", "hemisphere", "ultraviolet"],
+    preferredTerms: ["venus", "planet", "cloud", "global", "hemisphere", "ultraviolet", "magellan", "radar"],
+    excludedTerms: ["transit"],
   },
   {
     id: "earth",
     title: "Earth",
     kicker: "Blue marble",
-    query: "Earth blue marble NASA",
+    queries: ["blue marble", "Earth from space", "Earth globe"],
     description: "Our ocean world with weather bands, auroras, and the blue marble view.",
     orbit: 0.24,
     angle: -12,
@@ -98,7 +141,7 @@ const nodeDefinitions = [
     id: "moon",
     title: "Moon",
     kicker: "Lunar world",
-    query: "Moon global mosaic lunar orbiter NASA",
+    queries: ["full moon", "Moon lunar"],
     description: "Lunar maria, crater rims, and the silver quiet of our nearest world.",
     parentId: "earth",
     orbit: 0.024,
@@ -115,7 +158,7 @@ const nodeDefinitions = [
     id: "mars",
     title: "Mars",
     kicker: "Red planet",
-    query: "Mars planet global mosaic NASA",
+    queries: ["Mars global", "Mars Hubble", "Mars planet"],
     description: "Rust-red deserts, canyon walls, and dust plains stretching across ancient ground.",
     orbit: 0.34,
     angle: 32,
@@ -124,7 +167,7 @@ const nodeDefinitions = [
     color: "#d9714d",
     labelDx: 22,
     labelDy: 18,
-    preferredTerms: ["mars", "planet", "global", "mosaic", "surface", "crater", "orbiter"],
+    preferredTerms: ["mars", "planet", "global", "hubble", "hemisphere", "full disk", "color", "valles marineris", "olympus mons"],
     excludedTerms: [
       "rover",
       "curiosity",
@@ -143,7 +186,7 @@ const nodeDefinitions = [
     id: "jupiter",
     title: "Jupiter",
     kicker: "Gas giant",
-    query: "Jupiter planet NASA composite",
+    queries: ["Jupiter Juno", "Jupiter planet"],
     description: "The striped giant of storms, lightning, and immense polar cyclones.",
     orbit: 0.49,
     angle: -30,
@@ -158,7 +201,7 @@ const nodeDefinitions = [
     id: "saturn",
     title: "Saturn",
     kicker: "Ringed world",
-    query: "Saturn planet rings NASA",
+    queries: ["Saturn Cassini", "Saturn rings"],
     description: "Rings, storms, and golden cloud belts spread across the outer system.",
     orbit: 0.63,
     angle: 12,
@@ -174,7 +217,7 @@ const nodeDefinitions = [
     id: "neptune",
     title: "Neptune",
     kicker: "Ice giant",
-    query: "Neptune planet Voyager NASA",
+    queries: ["Neptune Voyager", "Neptune"],
     description: "Blue high-speed winds roll at the edge of the known planetary family.",
     orbit: 0.79,
     angle: -10,
@@ -189,7 +232,7 @@ const nodeDefinitions = [
     id: "orion",
     title: "Orion Nebula",
     kicker: "Deep sky",
-    query: "Orion Nebula NASA Hubble",
+    queries: ["Orion Nebula", "Orion Nebula Hubble"],
     description: "A luminous stellar nursery far beyond the planets, alive with newborn stars.",
     mapX: 0.34,
     mapY: 0.18,
@@ -199,13 +242,14 @@ const nodeDefinitions = [
     labelDy: -18,
     labelWidth: 164,
     realm: "deep",
-    preferredTerms: ["orion", "nebula", "hubble", "stars", "gas", "dust"],
+    preferredTerms: ["orion nebula", "nebula", "hubble", "stars", "gas", "dust"],
+    requiredTerms: ["orion nebula", "m42", "m43"],
   },
   {
     id: "pillars",
     title: "Pillars of Creation",
     kicker: "Deep sky",
-    query: "Pillars of Creation NASA",
+    queries: ["Pillars of Creation", "Eagle Nebula"],
     description: "Towering columns of dust and gas sculpted by radiation in the Eagle Nebula.",
     mapX: 0.56,
     mapY: 0.12,
@@ -216,12 +260,13 @@ const nodeDefinitions = [
     labelWidth: 176,
     realm: "deep",
     preferredTerms: ["pillars of creation", "eagle nebula", "nebula", "dust", "stars"],
+    requiredTerms: ["pillars", "eagle nebula", "m16"],
   },
   {
     id: "andromeda",
     title: "Andromeda Galaxy",
     kicker: "Deep sky",
-    query: "Andromeda galaxy NASA",
+    queries: ["Andromeda galaxy", "Andromeda", "M31"],
     description: "A spiral galaxy of billions of stars glowing beyond the edge of our solar neighborhood.",
     mapX: 0.82,
     mapY: 0.24,
@@ -232,14 +277,22 @@ const nodeDefinitions = [
     labelWidth: 170,
     realm: "deep",
     preferredTerms: ["andromeda", "galaxy", "spiral", "stars", "deep space"],
+    requiredTerms: ["andromeda", "m31"],
   },
 ];
 
 const state = {
-  apiKey: localStorage.getItem(API_STORAGE_KEY) || DEFAULT_API_KEY,
+  apiKey: readStoredApiKey(),
   selectedNode: nodeDefinitions.find((node) => node.id === "mars") || nodeDefinitions[0],
+  // Gallery: every relevant item fetched so far (sorted), how many are on
+  // screen, and the next NASA page to request for each query.
   galleryItems: [],
+  galleryShown: 0,
+  galleryCursors: [],
+  gallerySeenIds: new Set(),
+  galleryLoading: false,
   galleryRequestId: 0,
+  dialogIndex: -1,
   animationTime: 0,
   labelLayouts: new Map(),
   solarLayout: null,
@@ -249,7 +302,20 @@ const elements = {
   apiKeyForm: document.querySelector("#apiKeyForm"),
   apiKeyInput: document.querySelector("#apiKeyInput"),
   apodMedia: document.querySelector("#apodMedia"),
+  apodEyebrow: document.querySelector("#apodEyebrow"),
+  apodMeta: document.querySelector("#apodMeta"),
   apodTitle: document.querySelector("#apodTitle"),
+  heroBackdrop: document.querySelector("#heroBackdrop"),
+  heroCredit: document.querySelector("#heroCredit"),
+  siteNav: document.querySelector("#siteNav"),
+  destinationRail: document.querySelector("#destinationRail"),
+  statDestinations: document.querySelector("#statDestinations"),
+  selectionKicker: document.querySelector("#selectionKicker"),
+  galleryTitle: document.querySelector("#galleryTitle"),
+  loadMoreButton: document.querySelector("#loadMoreButton"),
+  dialogMeta: document.querySelector("#dialogMeta"),
+  dialogPrev: document.querySelector("#dialogPrev"),
+  dialogNext: document.querySelector("#dialogNext"),
   apodDescription: document.querySelector("#apodDescription"),
   apodLink: document.querySelector("#apodLink"),
   surpriseButton: document.querySelector("#surpriseButton"),
@@ -280,6 +346,59 @@ const starState = {
 };
 
 elements.apiKeyInput.value = state.apiKey === DEFAULT_API_KEY ? "" : state.apiKey;
+
+function readStoredApiKey() {
+  try {
+    return localStorage.getItem(API_STORAGE_KEY) || DEFAULT_API_KEY;
+  } catch {
+    return DEFAULT_API_KEY;
+  }
+}
+
+function writeStoredApiKey(value) {
+  try {
+    if (value === DEFAULT_API_KEY) {
+      localStorage.removeItem(API_STORAGE_KEY);
+    } else {
+      localStorage.setItem(API_STORAGE_KEY, value);
+    }
+  } catch {
+    // Storage can be blocked (private mode); the key still applies this visit.
+  }
+}
+
+function initializeDestinationRail() {
+  elements.statDestinations.textContent = String(nodeDefinitions.length);
+
+  elements.destinationRail.innerHTML = nodeDefinitions
+    .map((node, index) => {
+      const divider =
+        node.realm === "deep" && nodeDefinitions[index - 1]?.realm !== "deep"
+          ? '<span class="rail-divider" aria-hidden="true"></span>'
+          : "";
+
+      return `${divider}<button class="rail-chip" type="button" data-node-id="${node.id}" aria-pressed="false" style="--chip-color:${node.color}">${escapeHtml(node.title)}</button>`;
+    })
+    .join("");
+
+  elements.destinationRail.addEventListener("click", (event) => {
+    const chip = event.target.closest("[data-node-id]");
+    const node = chip && nodeDefinitions.find((entry) => entry.id === chip.dataset.nodeId);
+
+    if (node) {
+      selectNode(node);
+    }
+  });
+}
+
+function initializeNav() {
+  const update = () => {
+    elements.siteNav.classList.toggle("is-scrolled", window.scrollY > 24);
+  };
+
+  update();
+  window.addEventListener("scroll", update, { passive: true });
+}
 
 function initializeMapNodes() {
   renderMapNodes();
@@ -643,35 +762,43 @@ function initializeApiKeyForm() {
     const nextKey = elements.apiKeyInput.value.trim() || DEFAULT_API_KEY;
 
     state.apiKey = nextKey;
-
-    if (nextKey === DEFAULT_API_KEY) {
-      localStorage.removeItem(API_STORAGE_KEY);
-    } else {
-      localStorage.setItem(API_STORAGE_KEY, nextKey);
-    }
+    writeStoredApiKey(nextKey);
 
     setStatus("Refreshing NASA spotlight...");
     await loadApod();
-    setStatus(`Ready for ${state.selectedNode.title}`);
+    setStatus(`Locked onto ${state.selectedNode.title}`);
   });
 }
 
 function initializeDialog() {
   elements.dialogClose.addEventListener("click", closeDialog);
+  elements.dialogPrev.addEventListener("click", () => stepDialog(-1));
+  elements.dialogNext.addEventListener("click", () => stepDialog(1));
 
   elements.imageDialog.addEventListener("click", (event) => {
     if (event.target === elements.imageDialog) {
       closeDialog();
     }
   });
+
+  elements.imageDialog.addEventListener("keydown", (event) => {
+    if (event.key === "ArrowLeft") {
+      stepDialog(-1);
+    } else if (event.key === "ArrowRight") {
+      stepDialog(1);
+    }
+  });
 }
 
 function initializeSurpriseButton() {
   elements.surpriseButton.addEventListener("click", () => {
-    const nextNode =
-      nodeDefinitions[Math.floor(Math.random() * nodeDefinitions.length)];
-    selectNode(nextNode);
+    const options = nodeDefinitions.filter((node) => node.id !== state.selectedNode.id);
+    selectNode(options[Math.floor(Math.random() * options.length)]);
   });
+}
+
+function initializeLoadMore() {
+  elements.loadMoreButton.addEventListener("click", () => showMoreGallery());
 }
 
 function setStatus(message) {
@@ -680,19 +807,43 @@ function setStatus(message) {
 
 function setSelectedNodeUI(node) {
   state.selectedNode = node;
+  elements.selectionKicker.textContent = node.kicker;
   elements.selectionTitle.textContent = node.title;
   elements.selectionDescription.textContent = node.description;
+  elements.galleryTitle.innerHTML = `${escapeHtml(node.title)}, <em>in frames.</em>`;
 
   elements.mapNodes.forEach((mapNode) => {
     mapNode.classList.toggle("is-active", mapNode.dataset.nodeId === node.id);
   });
+
+  elements.destinationRail.querySelectorAll("[data-node-id]").forEach((chip) => {
+    const active = chip.dataset.nodeId === node.id;
+    chip.setAttribute("aria-pressed", String(active));
+
+    if (active) {
+      // Scroll only the rail horizontally; scrollIntoView would also move the page.
+      const rail = elements.destinationRail;
+      const chipLeft = chip.offsetLeft - rail.offsetLeft;
+      const chipRight = chipLeft + chip.offsetWidth;
+
+      if (chipLeft < rail.scrollLeft || chipRight > rail.scrollLeft + rail.clientWidth) {
+        rail.scrollTo({ left: chipLeft - 16, behavior: "smooth" });
+      }
+    }
+  });
 }
 
 async function selectNode(node) {
+  if (!node) {
+    return;
+  }
+
   setSelectedNodeUI(node);
   setStatus(`Scanning NASA archives for ${node.title}...`);
   await loadGallery(node);
 }
+
+/* ---------- Spotlight (APOD with archive fallback) ---------- */
 
 async function loadApod() {
   const url = new URL(NASA_APOD_ENDPOINT);
@@ -706,55 +857,56 @@ async function loadApod() {
       throw new Error(`APOD request failed: ${response.status}`);
     }
 
-    const apod = await response.json();
-    renderApod(apod);
+    renderApod(await response.json());
   } catch (error) {
-    elements.apodTitle.textContent = "NASA spotlight unavailable right now";
-    elements.apodDescription.textContent =
-      "The daily APOD request did not complete. The archive map still works, and you can try again with a personal NASA API key.";
-    elements.apodMedia.innerHTML =
-      '<div class="media-placeholder"><span>APOD request could not be loaded.</span></div>';
-    elements.apodLink.href = "https://api.nasa.gov/";
-    elements.apodLink.textContent = "Get a NASA API key";
-    console.error(error);
+    console.warn(error);
+    await loadFallbackSpotlight();
   }
 }
 
 function renderApod(apod) {
-  const previewUrl =
-    apod.media_type === "video" ? apod.thumbnail_url || "" : apod.url || "";
+  const title = apod.title || "Astronomy Picture of the Day";
+  const mediaUrl = safeHttpUrl(apod.url);
+  const previewUrl = apod.media_type === "video" ? safeHttpUrl(apod.thumbnail_url) : mediaUrl;
 
-  elements.apodTitle.textContent = apod.title || "Astronomy Picture of the Day";
+  elements.apodEyebrow.textContent = "Astronomy Picture of the Day";
+  elements.apodMeta.textContent = [formatDate(apod.date), apod.copyright && `© ${apod.copyright.trim()}`]
+    .filter(Boolean)
+    .join(" · ");
+  elements.apodTitle.textContent = title;
   elements.apodDescription.textContent =
     apod.explanation || "NASA did not return a description for this daily feature.";
-  elements.apodLink.href = apod.hdurl || apod.url || "https://apod.nasa.gov/apod/astropix.html";
+  elements.apodLink.href =
+    safeHttpUrl(apod.hdurl) || mediaUrl || "https://apod.nasa.gov/apod/astropix.html";
   elements.apodLink.textContent = "Open full NASA feature";
 
-  if (apod.media_type === "video" && apod.url) {
-    elements.apodMedia.innerHTML = `<iframe src="${apod.url}" title="${escapeAttribute(
-      apod.title || "NASA APOD video",
-    )}" allow="fullscreen"></iframe>`;
-    return;
+  if (apod.media_type === "video" && mediaUrl) {
+    elements.apodMedia.innerHTML = `<iframe src="${escapeAttribute(mediaUrl)}" title="${escapeAttribute(
+      title,
+    )}" allow="fullscreen" loading="lazy"></iframe>`;
+  } else if (previewUrl) {
+    elements.apodMedia.innerHTML = `<img src="${escapeAttribute(previewUrl)}" alt="${escapeAttribute(title)}" />`;
+  } else {
+    elements.apodMedia.innerHTML =
+      '<div class="media-placeholder"><span>NASA returned this feature without preview media.</span></div>';
   }
 
   if (previewUrl) {
-    elements.apodMedia.innerHTML = `<img src="${previewUrl}" alt="${escapeAttribute(
-      apod.title || "Astronomy Picture of the Day",
-    )}" />`;
-    return;
+    setHeroBackdrop(previewUrl, `Backdrop: ${title} (NASA APOD)`);
+  } else {
+    loadFallbackSpotlight({ backdropOnly: true });
   }
-
-  elements.apodMedia.innerHTML =
-    '<div class="media-placeholder"><span>NASA returned this feature without preview media.</span></div>';
 }
 
-async function loadGallery(node) {
-  const url = new URL(NASA_LIBRARY_ENDPOINT);
-  url.searchParams.set("q", node.query);
-  url.searchParams.set("media_type", "image");
-  const requestId = ++state.galleryRequestId;
+async function loadFallbackSpotlight({ backdropOnly = false } = {}) {
+  const dayOfYear = Math.floor(
+    (Date.now() - Date.UTC(new Date().getUTCFullYear(), 0, 0)) / 86400000,
+  );
+  const nasaId = SPOTLIGHT_FALLBACKS[dayOfYear % SPOTLIGHT_FALLBACKS.length];
 
   try {
+    const url = new URL(NASA_LIBRARY_ENDPOINT);
+    url.searchParams.set("nasa_id", nasaId);
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -762,40 +914,221 @@ async function loadGallery(node) {
     }
 
     const payload = await response.json();
-    const items = (payload.collection?.items || [])
-      .map((item) => normalizeLibraryItem(item, node))
+    const item = payload.collection?.items?.[0];
+    const metadata = item?.data?.[0];
+    const images = pickImageRenditions(item?.links || []);
+
+    if (!metadata || !images) {
+      throw new Error("Spotlight fallback returned no image");
+    }
+
+    const title = metadata.title || "From the NASA archive";
+    setHeroBackdrop(images.full, `Backdrop: ${title} (NASA)`);
+
+    if (backdropOnly) {
+      return;
+    }
+
+    elements.apodEyebrow.textContent = "Archive spotlight";
+    elements.apodMeta.textContent = [formatDate(metadata.date_created), metadata.center]
       .filter(Boolean)
-      .sort((first, second) => second.score - first.score)
-      .slice(0, 9);
+      .join(" · ");
+    elements.apodTitle.textContent = title;
+    elements.apodDescription.textContent = truncateCopy(
+      stripHtml(metadata.description || metadata.description_508 || ""),
+      620,
+    );
+    elements.apodMedia.innerHTML = `<img src="${escapeAttribute(images.full)}" alt="${escapeAttribute(title)}" />`;
+    elements.apodLink.href = `https://images.nasa.gov/details/${encodeURIComponent(nasaId)}`;
+    elements.apodLink.textContent = "View in NASA Library";
+  } catch (error) {
+    console.error(error);
+
+    if (backdropOnly) {
+      return;
+    }
+
+    elements.apodTitle.textContent = "NASA spotlight unavailable right now";
+    elements.apodDescription.textContent =
+      "The daily spotlight could not be loaded. The atlas and archive below still work, and a personal NASA API key often helps.";
+    elements.apodMedia.innerHTML =
+      '<div class="media-placeholder"><span>Spotlight could not be loaded.</span></div>';
+    elements.apodLink.href = "https://api.nasa.gov/";
+    elements.apodLink.textContent = "Get a free NASA API key";
+  }
+}
+
+function setHeroBackdrop(src, credit) {
+  const image = elements.heroBackdrop;
+
+  image.onload = () => {
+    image.classList.add("is-loaded");
+    elements.heroCredit.textContent = credit;
+  };
+  image.src = src;
+}
+
+/* ---------- Gallery ---------- */
+
+async function loadGallery(node) {
+  const requestId = ++state.galleryRequestId;
+
+  state.galleryItems = [];
+  state.galleryShown = 0;
+  state.gallerySeenIds = new Set();
+  state.galleryCursors = getNodeQueries(node).map((query) => ({ query, page: 1, done: false }));
+  elements.resultCount.textContent = "Loading images";
+  renderGallerySkeleton();
+
+  try {
+    await fetchMoreLibraryItems(node, requestId);
 
     if (requestId !== state.galleryRequestId) {
       return;
     }
 
-    state.galleryItems = items;
+    state.galleryShown = Math.min(GALLERY_PAGE_SIZE, state.galleryItems.length);
     renderGallery();
     setStatus(`Locked onto ${node.title}`);
-    elements.resultCount.textContent = `${items.length} images loaded`;
   } catch (error) {
     if (requestId !== state.galleryRequestId) {
       return;
     }
 
     state.galleryItems = [];
+    state.galleryShown = 0;
     renderGallery(
-      "NASA's image library did not respond for this destination. Try another region or reload the page.",
+      "NASA's image library did not respond for this destination. Try another destination or reload the page.",
     );
-    elements.resultCount.textContent = "0 images loaded";
     setStatus("NASA archive request failed");
     console.error(error);
   }
 }
 
+async function showMoreGallery() {
+  const node = state.selectedNode;
+  const requestId = state.galleryRequestId;
+
+  if (state.galleryLoading) {
+    return;
+  }
+
+  state.galleryLoading = true;
+  elements.loadMoreButton.disabled = true;
+  elements.loadMoreButton.textContent = "Loading...";
+
+  try {
+    if (state.galleryItems.length - state.galleryShown < GALLERY_PAGE_SIZE) {
+      await fetchMoreLibraryItems(node, requestId);
+    }
+
+    if (requestId !== state.galleryRequestId) {
+      return;
+    }
+
+    const previous = state.galleryShown;
+    state.galleryShown = Math.min(previous + GALLERY_PAGE_SIZE, state.galleryItems.length);
+    renderGallery(undefined, previous);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    state.galleryLoading = false;
+    elements.loadMoreButton.disabled = false;
+    elements.loadMoreButton.textContent = "Load more images";
+  }
+}
+
+// Fetch the next NASA page for every query that still has results, then
+// merge in new relevant items. Already-shown items keep their order; only the
+// not-yet-shown tail is re-sorted by relevance.
+async function fetchMoreLibraryItems(node, requestId) {
+  const cursors = state.galleryCursors.filter((cursor) => !cursor.done);
+
+  if (!cursors.length) {
+    return;
+  }
+
+  const results = await Promise.allSettled(
+    cursors.map(async (cursor) => {
+      const url = new URL(NASA_LIBRARY_ENDPOINT);
+      url.searchParams.set("q", cursor.query);
+      url.searchParams.set("media_type", "image");
+      url.searchParams.set("page_size", String(LIBRARY_PAGE_SIZE));
+      url.searchParams.set("page", String(cursor.page));
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(`NASA library request failed: ${response.status}`);
+      }
+
+      const payload = await response.json();
+      const collection = payload.collection || {};
+      cursor.page += 1;
+      cursor.done =
+        !(collection.links || []).some((link) => link.rel === "next") ||
+        cursor.page > 10; // NASA caps deep paging; 10 pages is plenty
+
+      return collection.items || [];
+    }),
+  );
+
+  if (requestId !== state.galleryRequestId) {
+    return;
+  }
+
+  const fulfilled = results.filter((result) => result.status === "fulfilled");
+
+  if (!fulfilled.length) {
+    cursors.forEach((cursor) => {
+      cursor.done = true;
+    });
+    throw results[0].reason;
+  }
+
+  // NASA often lists the same picture under several IDs, so also dedupe by title.
+  const freshItems = [];
+
+  fulfilled
+    .flatMap((result) => result.value)
+    .map((item) => normalizeLibraryItem(item, node))
+    .forEach((item) => {
+      const titleKey = `title:${item?.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()}`;
+
+      if (!item || state.gallerySeenIds.has(item.id) || state.gallerySeenIds.has(titleKey)) {
+        return;
+      }
+
+      state.gallerySeenIds.add(item.id);
+      state.gallerySeenIds.add(titleKey);
+      freshItems.push(item);
+    });
+
+  const shown = state.galleryItems.slice(0, state.galleryShown);
+  const pending = state.galleryItems
+    .slice(state.galleryShown)
+    .concat(freshItems)
+    .sort((first, second) => second.score - first.score);
+
+  state.galleryItems = shown.concat(pending);
+}
+
+function getNodeQueries(node) {
+  return node.queries || [node.query || node.title];
+}
+
+function hasMoreGallery() {
+  return (
+    state.galleryShown < state.galleryItems.length ||
+    state.galleryCursors.some((cursor) => !cursor.done)
+  );
+}
+
 function normalizeLibraryItem(item, node) {
   const metadata = item.data?.[0];
-  const imageLink = item.links?.find((link) => link.render === "image")?.href;
+  const images = pickImageRenditions(item.links || []);
 
-  if (!metadata || !imageLink) {
+  if (!metadata || !images) {
     return null;
   }
 
@@ -822,74 +1155,166 @@ function normalizeLibraryItem(item, node) {
     return null;
   }
 
+  // Must actually be about this destination, not just mention a keyword.
+  const titleAndKeywords = `${metadata.title || ""} ${keywords}`.toLowerCase();
+  const requiredTerms = node.requiredTerms || (node.preferredTerms || []).slice(0, 1);
+
+  if (requiredTerms.length && !includesAnyTerm(searchableText, requiredTerms)) {
+    return null;
+  }
+
   let score = 0;
   score += countTermMatches(searchableText, node.preferredTerms || []) * 8;
-  score += imageLink.toLowerCase().includes("thumb") ? -6 : 4;
-  const description = truncateCopy(
-    rawDescription,
-    160,
-  );
+  score += includesAnyTerm(titleAndKeywords, requiredTerms) ? 12 : 0;
+  score -= countTermMatches(searchableText, GENERIC_PENALTY_TERMS) * 10;
+  score += images.hasLarge ? 6 : 0;
 
   return {
+    id: nasaId || images.card,
     title: metadata.title || "Untitled NASA image",
-    description: description || "No description was included with this NASA archive image.",
-    imageUrl: imageLink,
-    libraryUrl: nasaId ? `https://images.nasa.gov/details-${nasaId}` : "https://images.nasa.gov/",
+    description:
+      truncateCopy(rawDescription, 900) || "No description was included with this NASA archive image.",
+    meta: [formatYear(metadata.date_created), metadata.center].filter(Boolean).join(" · "),
+    imageUrl: images.card,
+    fullImageUrl: images.full,
+    libraryUrl: nasaId
+      ? `https://images.nasa.gov/details/${encodeURIComponent(nasaId)}`
+      : "https://images.nasa.gov/",
     score,
   };
 }
 
-function renderGallery(message) {
-  if (!state.galleryItems.length) {
-    elements.galleryGrid.innerHTML = `<div class="gallery-empty">${message || "No images matched this destination yet."}</div>`;
+// NASA lists several renditions per asset (~thumb, ~small, ~medium, ~large,
+// ~orig). Cards use a medium-weight one; the dialog uses the largest web-sized one.
+function pickImageRenditions(links) {
+  const imageLinks = links.filter((link) => link.render === "image" && link.href);
+
+  if (!imageLinks.length) {
+    return null;
+  }
+
+  const byVariant = (variant) =>
+    imageLinks.find((link) => link.href.toLowerCase().includes(`~${variant}.`))?.href;
+  const fallback = imageLinks[0].href;
+  const large = byVariant("large");
+  const medium = byVariant("medium");
+
+  return {
+    card: medium || byVariant("small") || fallback,
+    full: large || medium || byVariant("orig") || fallback,
+    hasLarge: Boolean(large || medium),
+  };
+}
+
+function renderGallerySkeleton() {
+  elements.loadMoreButton.hidden = true;
+  elements.galleryGrid.setAttribute("aria-busy", "true");
+  elements.galleryGrid.innerHTML = Array.from(
+    { length: 6 },
+    () => '<div class="gallery-skeleton" aria-hidden="true"></div>',
+  ).join("");
+}
+
+function renderGallery(message, appendFrom = 0) {
+  elements.galleryGrid.removeAttribute("aria-busy");
+  elements.loadMoreButton.hidden = !hasMoreGallery();
+  elements.resultCount.textContent = `${state.galleryShown} image${state.galleryShown === 1 ? "" : "s"}`;
+
+  if (!state.galleryShown) {
+    elements.loadMoreButton.hidden = true;
+    elements.galleryGrid.innerHTML = `<div class="gallery-empty">${escapeHtml(
+      message || "No images matched this destination yet.",
+    )}</div>`;
     return;
   }
 
-  elements.galleryGrid.innerHTML = state.galleryItems
-    .map(
-      (item, index) => `
-        <article class="gallery-card" style="animation-delay:${index * 70}ms">
-          <button type="button" data-gallery-index="${index}">
-            <img src="${item.imageUrl}" alt="${escapeAttribute(item.title)}" loading="lazy" />
-            <div class="gallery-copy">
-              <h3>${escapeHtml(item.title)}</h3>
-              <p>${escapeHtml(item.description)}</p>
-            </div>
+  const markup = state.galleryItems
+    .slice(appendFrom, state.galleryShown)
+    .map((item, offset) => {
+      const index = appendFrom + offset;
+
+      return `
+        <article class="gallery-card" style="animation-delay:${offset * 60}ms">
+          <button type="button" data-gallery-index="${index}" aria-label="${escapeAttribute(item.title)}">
+            <img src="${escapeAttribute(item.imageUrl)}" alt="" loading="lazy" decoding="async" />
           </button>
+          <div class="gallery-copy">
+            ${item.meta ? `<p class="meta-line">${escapeHtml(item.meta)}</p>` : ""}
+            <h3>${escapeHtml(item.title)}</h3>
+          </div>
         </article>
-      `,
-    )
+      `;
+    })
     .join("");
 
-  elements.galleryGrid.querySelectorAll("[data-gallery-index]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const galleryItem = state.galleryItems[Number(button.dataset.galleryIndex)];
+  if (appendFrom === 0) {
+    elements.galleryGrid.innerHTML = markup;
+  } else {
+    elements.galleryGrid.insertAdjacentHTML("beforeend", markup);
+  }
+}
 
-      if (!galleryItem) {
-        return;
-      }
+function initializeGalleryClicks() {
+  elements.galleryGrid.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-gallery-index]");
 
-      openDialog(galleryItem);
-    });
+    if (button) {
+      openDialog(Number(button.dataset.galleryIndex));
+    }
   });
 }
 
-function openDialog(item) {
-  elements.dialogImage.src = item.imageUrl;
-  elements.dialogImage.alt = item.title;
-  elements.dialogTitle.textContent = item.title;
-  elements.dialogDescription.textContent = item.description;
-  elements.dialogLink.href = item.libraryUrl;
+/* ---------- Dialog ---------- */
 
-  if (typeof elements.imageDialog.showModal === "function") {
-    elements.imageDialog.showModal();
+function openDialog(index) {
+  const item = state.galleryItems[index];
+
+  if (!item) {
     return;
   }
 
-  elements.imageDialog.setAttribute("open", "open");
+  state.dialogIndex = index;
+  elements.dialogImage.src = item.imageUrl;
+  elements.dialogImage.alt = item.title;
+
+  // Show the already-cached card image instantly, then swap in the larger one.
+  if (item.fullImageUrl !== item.imageUrl) {
+    const fullImage = new Image();
+    fullImage.onload = () => {
+      if (state.dialogIndex === index) {
+        elements.dialogImage.src = item.fullImageUrl;
+      }
+    };
+    fullImage.src = item.fullImageUrl;
+  }
+
+  elements.dialogTitle.textContent = item.title;
+  elements.dialogMeta.textContent = item.meta;
+  elements.dialogDescription.textContent = item.description;
+  elements.dialogLink.href = item.libraryUrl;
+  elements.dialogPrev.disabled = index <= 0;
+  elements.dialogNext.disabled = index >= state.galleryShown - 1;
+
+  if (!elements.imageDialog.open) {
+    if (typeof elements.imageDialog.showModal === "function") {
+      elements.imageDialog.showModal();
+    } else {
+      elements.imageDialog.setAttribute("open", "open");
+    }
+  }
+}
+
+function stepDialog(direction) {
+  const nextIndex = state.dialogIndex + direction;
+
+  if (nextIndex >= 0 && nextIndex < state.galleryShown) {
+    openDialog(nextIndex);
+  }
 }
 
 function closeDialog() {
+  state.dialogIndex = -1;
+
   if (typeof elements.imageDialog.close === "function") {
     elements.imageDialog.close();
     return;
@@ -898,10 +1323,41 @@ function closeDialog() {
   elements.imageDialog.removeAttribute("open");
 }
 
+/* ---------- Helpers ---------- */
+
+function safeHttpUrl(value) {
+  if (!value) {
+    return "";
+  }
+
+  try {
+    const url = new URL(value, window.location.href);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function formatDate(value) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value.length === 10 ? `${value}T12:00:00Z` : value);
+
+  return Number.isNaN(date.getTime())
+    ? ""
+    : date.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+}
+
+function formatYear(value) {
+  const year = value ? new Date(value).getUTCFullYear() : NaN;
+  return Number.isNaN(year) ? "" : String(year);
+}
+
 function stripHtml(text) {
-  const container = document.createElement("div");
-  container.innerHTML = text;
-  return container.textContent || container.innerText || "";
+  const parsed = new DOMParser().parseFromString(text, "text/html");
+  return (parsed.body.textContent || "").replace(/\s+/g, " ").trim();
 }
 
 function truncateCopy(text, maxLength) {
@@ -913,7 +1369,7 @@ function truncateCopy(text, maxLength) {
 }
 
 function escapeHtml(text) {
-  return text
+  return String(text)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -925,15 +1381,26 @@ function escapeAttribute(text) {
   return escapeHtml(text);
 }
 
+// Whole-word matching, so e.g. "iss" no longer matches inside "mission".
+const termPatternCache = new Map();
+
+function termPattern(term) {
+  const key = term.toLowerCase();
+
+  if (!termPatternCache.has(key)) {
+    const escaped = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    termPatternCache.set(key, new RegExp(`(^|[^a-z0-9])${escaped}($|[^a-z0-9])`));
+  }
+
+  return termPatternCache.get(key);
+}
+
 function includesAnyTerm(text, terms) {
-  return terms.some((term) => text.includes(term.toLowerCase()));
+  return terms.some((term) => termPattern(term).test(text));
 }
 
 function countTermMatches(text, terms) {
-  return terms.reduce(
-    (count, term) => (text.includes(term.toLowerCase()) ? count + 1 : count),
-    0,
-  );
+  return terms.reduce((count, term) => (termPattern(term).test(text) ? count + 1 : count), 0);
 }
 
 function hexToRgba(hex, alpha) {
@@ -1220,15 +1687,19 @@ function drawDeepSpaceBridge(context, layout) {
 }
 
 async function bootstrap() {
+  initializeNav();
+  initializeDestinationRail();
   initializeMapNodes();
   initializeApiKeyForm();
   initializeDialog();
+  initializeGalleryClicks();
+  initializeLoadMore();
   initializeSurpriseButton();
   initializeStarfield();
   setSelectedNodeUI(state.selectedNode);
   setStatus("Initializing NASA feed...");
-  await loadApod();
-  await loadGallery(state.selectedNode);
+  // Independent requests: load the spotlight and the gallery in parallel.
+  await Promise.all([loadApod(), loadGallery(state.selectedNode)]);
 }
 
 bootstrap();
