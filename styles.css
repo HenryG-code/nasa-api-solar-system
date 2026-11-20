@@ -430,15 +430,6 @@ h3 {
   opacity: 1;
 }
 
-/* Night side of the orbit: blend the dark feed with the still image. */
-.hero.is-live.is-night .hero-video {
-  opacity: 0.4;
-}
-
-.hero.is-night .hero-backdrop img.is-loaded {
-  opacity: 0.9;
-}
-
 /* Cover the hero with a 16:9 player at any aspect ratio. The slight zoom
    pushes the player chrome at the edges out of view; clicks pass through. */
 .hero-video iframe {

@@ -34,6 +34,20 @@ test.describe("live ISS hero", () => {
     await expect(page.locator(".hero")).toHaveClass(/is-night/);
   });
 
+  test("the live feed is shown unblended on the night side", async ({ page }) => {
+    await page.route("https://api.wheretheiss.at/**", (route) =>
+      route.fulfill({
+        json: { latitude: 0, longitude: 0, altitude: 420, velocity: 27600, visibility: "eclipsed", timestamp: 1795200000 },
+      }),
+    );
+    await page.goto("/");
+    await expect(page.locator(".hero")).toHaveClass(/is-night/);
+
+    // Simulate the player reporting that it is playing.
+    await page.locator(".hero").evaluate((hero) => hero.classList.add("is-live"));
+    await expect(page.locator(".hero-video")).toHaveCSS("opacity", "1", { timeout: 4000 });
+  });
+
   test("Sound control stays hidden until the stream is actually playing", async ({ page }) => {
     await page.goto("/");
 

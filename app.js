@@ -2352,13 +2352,13 @@ async function pollIss() {
   scheduleIssPoll(ISS_POLL_MS * Math.min(2 ** issTracker.failures, 12));
 }
 
-// When the ISS is on the night side the live feed is almost black, so let the
-// still image show through and say so in the pill.
 function setNavIss(position) {
   const speed = Math.round(Number(position.velocity)).toLocaleString();
   elements.navIssValue.textContent = `${speed} km/h · ${Math.round(Number(position.altitude))} km`;
 }
 
+// On the night side the live feed is mostly dark. It is shown as-is (no
+// blending); the label says "night side" so the darkness reads as intended.
 function setHeroDaylight(isDaylight) {
   liveStream.daylight = isDaylight;
   document.querySelector(".hero").classList.toggle("is-night", !isDaylight);
