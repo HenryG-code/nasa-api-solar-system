@@ -17,7 +17,7 @@ Universe Atlas is a single-page, full-screen space explorer built with plain HTM
 | **Live from the ISS** | The opening screen plays NASA's official live HD camera feed from the space station. Turn on the sound or go fullscreen. When the station is over Earth's night side, the dark feed blends with a nebula image. |
 | **Spotlight** | NASA's Astronomy Picture of the Day, full-screen. If the APOD service is busy, it falls back to one of several iconic high-resolution NASA images. |
 | **ISS tracker** | ESA's live ground-track map beside live position, altitude, speed and sunlight data, refreshed every few seconds. The header shows the station's speed and altitude wherever you are on the page. |
-| **Solar system** | A top-down view of all eight planets in order from the Sun. Each is labelled with its number and distance in AU, and they orbit at their relative speeds, so Mercury races and Neptune crawls. Select a planet, or a deep-sky object like Andromeda, to load its photos. |
+| **Solar system** | A top-down view of all eight planets in order from the Sun, each shown with a real NASA photograph and lit from the Sun so it shows its phase as it orbits. Each is labelled with its number and distance in AU, and they orbit at their relative speeds, so Mercury races and Neptune crawls. Select a planet, or a deep-sky object like Andromeda, to load its photos. |
 | **Photo archive** | Real images from the NASA Image and Video Library for whatever you selected, ranked for relevance, de-duplicated, and served sharp on any screen. Open any photo full size and step through them with the arrow keys. |
 
 <p align="center">
@@ -40,6 +40,7 @@ The image library and ISS sources need no key. APOD uses NASA's shared `DEMO_KEY
 ## Details worth knowing
 
 - **Sharp images everywhere.** Each photo gets a `srcset` built from NASA's own width data, so phones download small files and retina or 4K screens get large ones. Images NASA only has at low resolution are left out.
+- **Realistic bodies.** Each planet and the Moon is a NASA full-disk photo, cropped to the disk and stored at 160&nbsp;px (about 70&nbsp;KB for all nine). A shading layer turns every frame to face the Sun, and Saturn keeps its photographed rings. The Sun is drawn with limb darkening and a slowly turning granulation texture.
 - **Readable orbits.** Orbit spacing blends even steps with the square root of real distance. Inner planets bunch up and outer ones spread out, as in reality, but every ring stays clickable. Speeds follow Kepler's third law, slowed so the outer planets still visibly move.
 - **Light on resources.** The muted live video pauses when scrolled away, and ISS data is only fetched while the tracker is on screen.
 - **Accessible.** It works with the keyboard, respects reduced-motion settings, and includes a skip link.
@@ -71,6 +72,7 @@ The site is deployed as a **Cloudflare Worker serving static assets** (`wrangler
 |-- wrangler.jsonc      # Cloudflare Worker config
 |-- _headers            # Response headers on Cloudflare
 |-- .assetsignore       # Files kept out of the deployed site
+|-- assets/planets/     # Cropped NASA photos of each planet and the Moon
 |-- preview.png         # README and link-preview image
 `-- docs/               # Additional README screenshots
 ```
@@ -83,7 +85,7 @@ node capture-preview.mjs http://127.0.0.1:3000 preview.png "#atlas"
 
 ## Credits
 
-Imagery and video courtesy of NASA. ISS map © ESA. This is an independent project, not affiliated with NASA, ESA or SpaceX.
+Imagery and video courtesy of NASA. Planet photos: NASA/JPL (PIA15162 Mercury, PIA00104 Venus, PIA18033 Earth, PIA00407 Mars, PIA00343 Jupiter, PIA05389 Saturn, PIA18182 Uranus, PIA01492 Neptune) and NASA/Goddard (Full Moon). ISS map © ESA. This is an independent project, not affiliated with NASA, ESA or SpaceX.
 
 ## License
 

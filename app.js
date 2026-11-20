@@ -69,7 +69,7 @@ const nodeDefinitions = [
     queries: ["Mercury MESSENGER", "Mercury planet"],
     description: "Scorched cliffs and shadowed craters closest to the Sun.",
     au: 0.39,
-    size: 9,
+    size: 12,
     color: "#b8ac97",
     preferredTerms: ["mercury", "planet", "surface", "mosaic", "crater", "global", "messenger"],
     excludedTerms: ["mercury program", "mercury-redstone", "mercury-atlas", "freedom 7", "friendship 7"],
@@ -81,8 +81,9 @@ const nodeDefinitions = [
     queries: ["Venus planet", "Venus Magellan"],
     description: "Sulfur clouds conceal a volcanic world glowing with trapped heat.",
     au: 0.72,
-    size: 13,
+    size: 16,
     color: "#d7be93",
+    atmosphere: "#ffe2a8",
     preferredTerms: ["venus", "planet", "cloud", "global", "hemisphere", "ultraviolet", "magellan", "radar"],
     excludedTerms: ["transit"],
   },
@@ -93,8 +94,9 @@ const nodeDefinitions = [
     queries: ["blue marble", "Earth from space", "Earth globe"],
     description: "Our ocean world with weather bands, auroras, and the blue marble view.",
     au: 1,
-    size: 14,
+    size: 17,
     color: "#4fbfff",
+    atmosphere: "#7cc4ff",
     preferredTerms: ["earth", "blue marble", "planet", "globe", "clouds", "aurora"],
     excludedTerms: ["iss", "international space station", "spacesuit", "spacewalk"],
   },
@@ -106,7 +108,7 @@ const nodeDefinitions = [
     description: "Lunar maria, crater rims, and the silver quiet of our nearest world.",
     parentId: "earth",
     distance: "Earth's moon",
-    size: 6,
+    size: 7,
     color: "#d7d8d6",
     preferredTerms: ["moon", "lunar", "surface", "mosaic", "crater", "orbit"],
     excludedTerms: ["apollo", "astronaut", "lander", "flag", "footprint", "rover"],
@@ -118,7 +120,7 @@ const nodeDefinitions = [
     queries: ["Mars global", "Mars Hubble", "Mars planet"],
     description: "Rust-red deserts, canyon walls, and dust plains stretching across ancient ground.",
     au: 1.52,
-    size: 11,
+    size: 14,
     color: "#d9714d",
     preferredTerms: ["mars", "planet", "global", "hubble", "hemisphere", "full disk", "color", "valles marineris", "olympus mons"],
     excludedTerms: [
@@ -142,7 +144,7 @@ const nodeDefinitions = [
     queries: ["Jupiter Juno", "Jupiter planet"],
     description: "The striped giant of storms, lightning, and immense polar cyclones.",
     au: 5.2,
-    size: 30,
+    size: 38,
     color: "#d8ab87",
     preferredTerms: ["jupiter", "planet", "storm", "great red spot", "cloud", "global"],
   },
@@ -153,7 +155,7 @@ const nodeDefinitions = [
     queries: ["Saturn Cassini", "Saturn rings"],
     description: "Rings, storms, and golden cloud belts spread across the outer system.",
     au: 9.58,
-    size: 25,
+    size: 30,
     color: "#d8c690",
     hasRings: true,
     preferredTerms: ["saturn", "planet", "rings", "cloud", "global", "cassini"],
@@ -165,8 +167,9 @@ const nodeDefinitions = [
     queries: ["Uranus Voyager", "Uranus planet"],
     description: "A pale cyan world rolling on its side, wrapped in methane haze and faint rings.",
     au: 19.2,
-    size: 18,
+    size: 22,
     color: "#9fe3e6",
+    atmosphere: "#bff3f5",
     preferredTerms: ["uranus", "planet", "voyager", "rings", "ice giant", "methane"],
   },
   {
@@ -176,8 +179,9 @@ const nodeDefinitions = [
     queries: ["Neptune Voyager", "Neptune"],
     description: "Blue high-speed winds roll at the edge of the known planetary family.",
     au: 30.05,
-    size: 18,
+    size: 22,
     color: "#6e9fff",
+    atmosphere: "#7aa8ff",
     preferredTerms: ["neptune", "planet", "blue", "storm", "global", "voyager"],
   },
   {
@@ -368,17 +372,23 @@ function renderMapNodes() {
       const activeClass = node.id === state.selectedNode.id ? " is-active" : "";
       const ringClass = node.hasRings ? " map-node--ringed" : "";
       const deepClass = node.realm === "deep" ? " map-node--deep-space" : "";
+      // Planets and the Moon use cropped NASA photos (assets/planets).
+      const textured = node.realm !== "deep";
+      const textureClass = textured ? " map-node--textured" : "";
+      const textureStyle = textured ? `--texture:url(./assets/planets/${node.id}.jpg);` : "";
+      const atmosphereStyle = node.atmosphere ? `--atmo:${hexToRgba(node.atmosphere, 0.55)};` : "";
       const order = planetOrder(node);
 
       return `
         <button
-          class="map-node${activeClass}${ringClass}${deepClass}"
+          class="map-node${activeClass}${ringClass}${deepClass}${textureClass}"
           data-node-id="${node.id}"
           type="button"
           style="
             --planet-size:${node.size}px;
             --planet-color:${node.color};
             --planet-glow:${hexToRgba(node.color, 0.5)};
+            ${textureStyle}${atmosphereStyle}
           "
           aria-label="${escapeAttribute(`${node.title}, ${labelText(node).detail}`)}"
         >
@@ -488,6 +498,16 @@ function syncMapLayout(time = 0) {
     mapNode.style.left = `${layoutNode.x}px`;
     mapNode.style.top = `${layoutNode.y}px`;
     mapNode.style.setProperty("--depth-scale", layoutNode.scale.toFixed(3));
+
+    // Light each body from the Sun: the shading layer centres its bright
+    // side on the direction of the Sun, so planets show phases as they orbit.
+    if (!layoutNode.realm) {
+      const dx = layout.sun.x - layoutNode.x;
+      const dy = layout.sun.y - layoutNode.y;
+      const distance = Math.hypot(dx, dy) || 1;
+      mapNode.style.setProperty("--lx", `${(50 + (dx / distance) * 34).toFixed(1)}%`);
+      mapNode.style.setProperty("--ly", `${(50 + (dy / distance) * 34).toFixed(1)}%`);
+    }
 
     const labelLayout = labelLayouts.get(mapNode.dataset.nodeId);
 
@@ -704,9 +724,13 @@ function computeLabelLayout(layout, width, height) {
   return labelLayouts;
 }
 
+// Saturn's photo includes its rings, about 2.4 times wider than the planet.
+const RING_WIDTH_RATIO = 2.37;
+
 function buildLabelCandidates(node, labelWidth, labelHeight, gap) {
   const radius = (node.size * (node.scale || 1)) / 2;
-  const side = radius + gap;
+  const halfWidth = node.hasRings ? radius * RING_WIDTH_RATIO : radius;
+  const side = halfWidth + gap;
   const vertical = radius + gap * 0.5;
 
   return dedupeCandidates([

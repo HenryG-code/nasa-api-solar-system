@@ -842,19 +842,51 @@ h3 {
   animation: solar-pulse 8s ease-in-out infinite;
 }
 
+/* Photosphere: limb darkening (the disk dims and reddens towards its edge,
+   as the real Sun does) plus a fine, slowly turning granulation texture. */
 .sun-core {
   inset: 0;
+  overflow: hidden;
   border-radius: 50%;
   background: radial-gradient(
-    circle at 35% 32%,
-    #fffbe9 0%,
-    #ffd977 30%,
-    #ff9f35 64%,
-    #b8520f 100%
+    circle,
+    #fffdf2 0%,
+    #fff1c4 28%,
+    #ffd57a 55%,
+    #ffad3b 76%,
+    #f07b18 90%,
+    #b9480a 100%
   );
   box-shadow:
-    0 0 24px rgba(255, 173, 72, 0.6),
-    0 0 70px rgba(255, 173, 72, 0.3);
+    0 0 18px rgba(255, 200, 110, 0.75),
+    0 0 46px rgba(255, 160, 60, 0.45),
+    0 0 110px rgba(255, 140, 40, 0.25);
+}
+
+.sun-core::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55' numOctaves='3' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0.55 0 0 0 0 0.3 0 0 0 0 0.05 0 0 0 1.6 -0.55'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 40% 40%;
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+  animation: sun-turn 160s linear infinite;
+}
+
+/* Re-apply limb darkening above the texture so the edge stays soft. */
+.sun-core::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, transparent 58%, rgba(170, 60, 5, 0.45) 92%, rgba(120, 35, 0, 0.7) 100%);
+}
+
+@keyframes sun-turn {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .map-overlay {
@@ -941,16 +973,41 @@ h3 {
   border: 1px dashed rgba(255, 255, 255, 0.18);
 }
 
-.map-node--ringed .map-node__body::after {
+/* Planets and the Moon: a cropped NASA photo of each body. */
+.map-node--textured .map-node__body {
+  background: var(--texture) center / cover no-repeat, var(--planet-color);
+  box-shadow:
+    0 0 0 0.5px rgba(255, 255, 255, 0.06),
+    0 0 calc(var(--planet-size) * 0.45) var(--atmo, rgba(0, 0, 0, 0));
+}
+
+/* Sunlight: bright on the side facing the Sun (--lx/--ly, set every frame),
+   falling into night on the far side, so each planet shows its phase. */
+.map-node--textured .map-node__body::after {
   content: "";
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: calc(var(--planet-size) * 1.85);
-  height: calc(var(--planet-size) * 0.7);
-  transform: translate(-50%, -50%) rotate(-18deg);
-  border: 1.5px solid rgba(227, 214, 173, 0.7);
+  inset: 0;
   border-radius: 50%;
+  background: radial-gradient(
+    circle at var(--lx, 35%) var(--ly, 35%),
+    rgba(255, 250, 235, 0.16) 0%,
+    rgba(0, 0, 0, 0) 34%,
+    rgba(0, 0, 0, 0.5) 58%,
+    rgba(0, 0, 0, 0.9) 82%
+  );
+}
+
+/* Saturn keeps its photographed rings; screen blending drops the black sky. */
+.map-node--ringed .map-node__body {
+  width: calc(var(--planet-size) * 2.37);
+  border-radius: 0;
+  background: var(--texture) center / contain no-repeat;
+  box-shadow: none;
+  mix-blend-mode: screen;
+}
+
+.map-node--ringed .map-node__body::after {
+  display: none;
 }
 
 .map-node__label {
@@ -1016,6 +1073,21 @@ h3 {
   box-shadow:
     0 0 0 8px rgba(255, 255, 255, 0.08),
     0 0 34px var(--planet-glow);
+}
+
+.map-node--textured:hover .map-node__body,
+.map-node--textured.is-active .map-node__body,
+.map-node--textured:focus-visible .map-node__body {
+  box-shadow:
+    0 0 0 1.5px rgba(255, 255, 255, 0.55),
+    0 0 0 7px rgba(255, 255, 255, 0.07),
+    0 0 calc(var(--planet-size) * 0.6) var(--atmo, rgba(255, 255, 255, 0.12));
+}
+
+.map-node--ringed:hover .map-node__body,
+.map-node--ringed.is-active .map-node__body,
+.map-node--ringed:focus-visible .map-node__body {
+  box-shadow: none;
 }
 
 .map-node:hover .map-node__label,
