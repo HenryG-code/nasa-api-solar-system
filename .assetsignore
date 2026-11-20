@@ -1,0 +1,11 @@
+# Files that should not be published as part of the static site
+.git
+.claude
+.wrangler
+node_modules
+wrangler.jsonc
+server.mjs
+capture-preview.mjs
+package.json
+package-lock.json
+*.log
