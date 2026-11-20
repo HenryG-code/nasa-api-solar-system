@@ -14,7 +14,7 @@ Universe Atlas is a single-page, full-screen space explorer built with plain HTM
 
 | Section | What it is |
 | --- | --- |
-| **Live from the ISS** | The opening screen plays NASA's official live HD camera feed from the space station. Turn on the sound or go fullscreen. When the station is over Earth's night side, the dark feed blends with a nebula image. |
+| **Live from the ISS** | The opening screen plays NASA's official live HD camera feed from the space station. Turn on the sound or go fullscreen. The feed is shown exactly as NASA sends it; on Earth's night side it goes dark and the label says so. |
 | **Spotlight** | NASA's Astronomy Picture of the Day, full-screen. If the APOD service is busy, it falls back to one of several iconic high-resolution NASA images. |
 | **ISS tracker** | ESA's live ground-track map beside live position, altitude, speed and sunlight data, refreshed every few seconds. The header shows the station's speed and altitude wherever you are on the page. |
 | **Solar system** | A top-down view of all eight planets in order from the Sun, each shown with a real NASA photograph and lit from the Sun so it shows its phase as it orbits. Each is labelled with its number and distance in AU, and they orbit at their relative speeds, so Mercury races and Neptune crawls. Select a planet to fly in for a close-up (with its diameter, day and year), then press Esc or **Back to solar system** to zoom out. Deep-sky objects like Andromeda load their photos too. |
