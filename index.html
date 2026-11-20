@@ -6,13 +6,13 @@
     <title>Universe Atlas</title>
     <meta
       name="description"
-      content="An interactive atlas of the cosmos. Move across the solar system and deep sky, and pull spectacular imagery straight from NASA's archive."
+      content="Watch Earth live from the International Space Station, track it in real time, and explore the solar system and deep sky through NASA's archive."
     />
-    <meta name="theme-color" content="#04050a" />
+    <meta name="theme-color" content="#000000" />
     <meta property="og:title" content="Universe Atlas" />
     <meta
       property="og:description"
-      content="An interactive atlas of the cosmos, powered by NASA's open image archive."
+      content="The cosmos, live: the ISS in real time and NASA's image archive."
     />
     <meta property="og:image" content="https://nasa-api-solar-system.gagianohenry.workers.dev/preview.png" />
     <meta property="og:url" content="https://nasa-api-solar-system.gagianohenry.workers.dev/" />
@@ -20,14 +20,14 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='6' fill='%23e3c58a'/%3E%3Cellipse cx='16' cy='16' rx='14' ry='5' fill='none' stroke='%23e3c58a' stroke-width='1.5' transform='rotate(-20 16 16)'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='6' fill='%23ffffff'/%3E%3Cellipse cx='16' cy='16' rx='14' ry='5' fill='none' stroke='%23ffffff' stroke-width='1.5' transform='rotate(-20 16 16)'/%3E%3C/svg%3E"
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://images-api.nasa.gov" />
     <link rel="preconnect" href="https://images-assets.nasa.gov" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,300..500&family=Manrope:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@500;600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="./styles.css" />
@@ -45,67 +45,66 @@
       </a>
       <nav class="nav-links" aria-label="Sections">
         <a href="#spotlight">Spotlight</a>
-        <a href="#atlas">Atlas</a>
+        <a href="#iss">ISS Tracker</a>
+        <a href="#atlas">Solar System</a>
         <a href="#gallery">Archive</a>
       </nav>
-      <span class="nav-badge">NASA open data</span>
+      <a class="nav-chip" href="#iss" aria-label="Live ISS status">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span class="nav-chip__label">ISS</span>
+        <span class="nav-chip__value" id="navIssValue">Live</span>
+      </a>
     </header>
 
-    <section class="hero" id="top">
+    <section class="hero" id="top" aria-label="Live view from the International Space Station">
       <div class="hero-backdrop" aria-hidden="true">
         <img id="heroBackdrop" alt="" />
+        <div class="hero-video" id="heroVideo"></div>
       </div>
-      <div class="hero-content">
-        <p class="eyebrow">An interactive atlas of the cosmos</p>
-        <h1>Chart the cosmos, <em>one frame at a time.</em></h1>
-        <p class="lead">
-          Drift along the orbits of the solar system, then step past Neptune into
-          nebulae and galaxies. Every destination opens a curated stream of imagery
-          from NASA's own archive.
-        </p>
+      <div class="panel-copy">
+        <p class="kicker"><span class="live-dot" aria-hidden="true"></span> <span id="livePillText">Live from the ISS</span></p>
+        <h1>The cosmos, live</h1>
+        <p class="lead">Earth from orbit, in real time. Then the rest of the universe.</p>
         <div class="hero-actions">
-          <a class="button button--primary" href="#atlas">Explore the atlas</a>
-          <a class="button button--ghost" href="#spotlight">Today's spotlight</a>
+          <a class="button" href="#atlas">Explore <span class="button-arrow" aria-hidden="true"></span></a>
+          <a class="button" href="#iss">Track the ISS <span class="button-arrow" aria-hidden="true"></span></a>
         </div>
-        <dl class="hero-stats">
-          <div>
-            <dt>Destinations</dt>
-            <dd id="statDestinations">11</dd>
-          </div>
-          <div>
-            <dt>Archive images</dt>
-            <dd>140k+</dd>
-          </div>
-          <div>
-            <dt>Spotlight</dt>
-            <dd>Daily</dd>
-          </div>
-        </dl>
       </div>
-      <p class="hero-credit" id="heroCredit"></p>
+      <div class="hero-controls">
+        <p class="hero-credit" id="heroCredit"></p>
+        <button class="icon-button" id="soundToggle" type="button" aria-pressed="false" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path class="icon-speaker" d="M4 9h4l5-4v14l-5-4H4z" /><path class="icon-waves" d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" /><path class="icon-mute" d="M16 9l6 6M22 9l-6 6" /></svg>
+          <span id="soundLabel">Sound on</span>
+        </button>
+        <button class="icon-button" id="fullscreenToggle" type="button" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg>
+          <span id="fullscreenLabel">Fullscreen</span>
+        </button>
+      </div>
+      <a class="scroll-cue" href="#spotlight" aria-label="Scroll to the spotlight"></a>
     </section>
 
-    <main class="page-shell">
+    <main>
       <section class="spotlight" id="spotlight" aria-labelledby="apodTitle">
         <div class="featured-media" id="apodMedia">
           <div class="media-placeholder"><span class="loader" aria-hidden="true"></span></div>
         </div>
-        <div class="featured-copy">
-          <p class="eyebrow" id="apodEyebrow">Astronomy Picture of the Day</p>
+        <div class="panel-copy featured-copy">
+          <p class="kicker" id="apodEyebrow">Astronomy Picture of the Day</p>
           <p class="meta-line" id="apodMeta"></p>
-          <h2 id="apodTitle">Preparing today's window into space.</h2>
+          <h2 id="apodTitle">Today's window into space</h2>
           <p id="apodDescription" class="clamp-copy">
             NASA's daily story from the sky will appear here in a moment.
           </p>
           <div class="featured-actions">
             <a
               id="apodLink"
-              class="button button--ghost"
+              class="button"
               href="https://apod.nasa.gov/apod/astropix.html"
               target="_blank"
               rel="noreferrer"
             >
-              Open NASA APOD
+              Open NASA APOD <span class="button-arrow" aria-hidden="true"></span>
             </a>
           </div>
 
@@ -134,19 +133,63 @@
         </div>
       </section>
 
-      <section class="map-section" id="atlas">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">The atlas</p>
-            <h2>Cruise the ecliptic, <em>then leave it behind.</em></h2>
+      <section class="iss-section" id="iss" aria-labelledby="issTitle">
+        <div class="shell">
+          <div class="section-heading">
+            <div>
+              <p class="kicker"><span class="live-dot" aria-hidden="true"></span> Live tracker</p>
+              <h2 id="issTitle">Where is the ISS right now?</h2>
+            </div>
+            <p class="iss-updated" id="issUpdated" aria-live="off">Connecting...</p>
           </div>
-          <button class="button button--ghost" id="surpriseButton" type="button">
-            <span aria-hidden="true">&#10022;</span> Surprise me
-          </button>
+
+          <div class="iss-layout">
+            <div class="iss-map">
+              <iframe
+                src="https://isstracker.spaceflight.esa.int/"
+                title="ESA live map of the International Space Station's position"
+                loading="lazy"
+                scrolling="no"
+                allowfullscreen
+              ></iframe>
+            </div>
+
+            <dl class="iss-telemetry" id="issTelemetry">
+              <div class="telemetry-card">
+                <dt>Latitude</dt>
+                <dd id="issLat">--</dd>
+              </div>
+              <div class="telemetry-card">
+                <dt>Longitude</dt>
+                <dd id="issLon">--</dd>
+              </div>
+              <div class="telemetry-card">
+                <dt>Altitude</dt>
+                <dd id="issAlt">--</dd>
+              </div>
+              <div class="telemetry-card">
+                <dt>Speed</dt>
+                <dd id="issSpeed">--</dd>
+              </div>
+              <div class="telemetry-card">
+                <dt>Sunlight</dt>
+                <dd id="issSun">--</dd>
+              </div>
+              <div class="telemetry-card">
+                <dt>Orbits per day</dt>
+                <dd id="issOrbits">--</dd>
+              </div>
+            </dl>
+          </div>
+          <p class="iss-credit">
+            Map &copy; <a href="https://isstracker.spaceflight.esa.int/" target="_blank" rel="noreferrer">ESA</a>.
+            Telemetry from <a href="https://wheretheiss.at/" target="_blank" rel="noreferrer">wheretheiss.at</a>.
+            Live video: <a href="https://eol.jsc.nasa.gov/esrs/hdev/" target="_blank" rel="noreferrer">NASA ISS HD Earth views</a>.
+          </p>
         </div>
+      </section>
 
-        <div class="destination-rail" id="destinationRail" role="toolbar" aria-label="Destinations"></div>
-
+      <section class="map-section" id="atlas" aria-labelledby="atlasTitle">
         <div class="canvas-frame">
           <canvas id="starfield" aria-hidden="true"></canvas>
           <div class="canvas-glow" aria-hidden="true"></div>
@@ -154,16 +197,24 @@
             <div class="sun-anchor">
               <span class="sun-corona"></span>
               <span class="sun-core"></span>
-              <span class="sun-label">Sun</span>
             </div>
-            <p class="orbit-note">Artistic scale</p>
           </div>
 
           <div class="map-overlay" id="mapOverlay"></div>
 
+          <div class="map-top">
+            <div>
+              <p class="kicker">The solar system, from above</p>
+              <h2 id="atlasTitle">Closest to the Sun, outward</h2>
+            </div>
+            <button class="button" id="surpriseButton" type="button">
+              Surprise me <span class="button-arrow" aria-hidden="true"></span>
+            </button>
+          </div>
+
           <div class="map-hud">
             <div>
-              <p class="eyebrow" id="selectionKicker">Selected destination</p>
+              <p class="kicker" id="selectionKicker">Selected destination</p>
               <h3 id="selectionTitle">Mars</h3>
               <p id="selectionDescription">
                 Rust-red deserts, canyon walls, and dust plains stretching across ancient ground.
@@ -175,33 +226,40 @@
             </div>
           </div>
         </div>
+
+        <div class="destination-rail" id="destinationRail" role="toolbar" aria-label="Destinations"></div>
       </section>
 
       <section class="gallery-section" id="gallery">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">From the NASA archive</p>
-            <h2 id="galleryTitle">Mars, <em>in frames.</em></h2>
+        <div class="shell">
+          <div class="section-heading">
+            <div>
+              <p class="kicker">From the NASA archive</p>
+              <h2 id="galleryTitle">Mars</h2>
+            </div>
           </div>
-        </div>
 
-        <div class="gallery-grid" id="galleryGrid" aria-live="polite"></div>
+          <div class="gallery-grid" id="galleryGrid" aria-live="polite"></div>
 
-        <div class="gallery-more">
-          <button class="button button--ghost" id="loadMoreButton" type="button" hidden>
-            Load more images
-          </button>
+          <div class="gallery-more">
+            <button class="button" id="loadMoreButton" type="button" hidden>
+              Load more <span class="button-arrow" aria-hidden="true"></span>
+            </button>
+          </div>
         </div>
       </section>
     </main>
 
     <footer class="site-footer">
-      <p>
-        Imagery courtesy of NASA via the
-        <a href="https://images.nasa.gov/" target="_blank" rel="noreferrer">NASA Image and Video Library</a>
-        and <a href="https://apod.nasa.gov/" target="_blank" rel="noreferrer">APOD</a>.
-        Universe Atlas is not affiliated with NASA.
-      </p>
+      <div class="shell">
+        <span class="footer-brand">Universe Atlas</span>
+        <p>
+          Imagery courtesy of NASA via the
+          <a href="https://images.nasa.gov/" target="_blank" rel="noreferrer">NASA Image and Video Library</a>
+          and <a href="https://apod.nasa.gov/" target="_blank" rel="noreferrer">APOD</a>.
+          Not affiliated with NASA, ESA or SpaceX.
+        </p>
+      </div>
     </footer>
 
     <dialog class="image-dialog" id="imageDialog" aria-labelledby="dialogTitle">
@@ -215,12 +273,12 @@
           <button class="dialog-nav dialog-nav--next" id="dialogNext" type="button" aria-label="Next image">&#8594;</button>
         </div>
         <div class="dialog-copy">
-          <p class="eyebrow">NASA archive</p>
+          <p class="kicker">NASA archive</p>
           <p class="meta-line" id="dialogMeta"></p>
           <h3 id="dialogTitle"></h3>
           <p id="dialogDescription"></p>
-          <a id="dialogLink" class="button button--ghost" href="#" target="_blank" rel="noreferrer">
-            View in NASA Library
+          <a id="dialogLink" class="button" href="#" target="_blank" rel="noreferrer">
+            View in NASA Library <span class="button-arrow" aria-hidden="true"></span>
           </a>
         </div>
       </div>

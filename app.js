@@ -234,8 +234,8 @@ const nodeDefinitions = [
     kicker: "Deep sky",
     queries: ["Orion Nebula", "Orion Nebula Hubble"],
     description: "A luminous stellar nursery far beyond the planets, alive with newborn stars.",
-    mapX: 0.34,
-    mapY: 0.18,
+    mapX: 0.12,
+    mapY: 0.36,
     size: 16,
     color: "#8fe9ff",
     labelDx: -166,
@@ -251,8 +251,8 @@ const nodeDefinitions = [
     kicker: "Deep sky",
     queries: ["Pillars of Creation", "Eagle Nebula"],
     description: "Towering columns of dust and gas sculpted by radiation in the Eagle Nebula.",
-    mapX: 0.56,
-    mapY: 0.12,
+    mapX: 0.88,
+    mapY: 0.36,
     size: 14,
     color: "#ffe0aa",
     labelDx: -86,
@@ -268,8 +268,8 @@ const nodeDefinitions = [
     kicker: "Deep sky",
     queries: ["Andromeda galaxy", "Andromeda", "M31"],
     description: "A spiral galaxy of billions of stars glowing beyond the edge of our solar neighborhood.",
-    mapX: 0.82,
-    mapY: 0.24,
+    mapX: 0.86,
+    mapY: 0.62,
     size: 15,
     color: "#adc3ff",
     labelDx: -178,
@@ -306,10 +306,23 @@ const elements = {
   apodMeta: document.querySelector("#apodMeta"),
   apodTitle: document.querySelector("#apodTitle"),
   heroBackdrop: document.querySelector("#heroBackdrop"),
+  heroVideo: document.querySelector("#heroVideo"),
+  livePillText: document.querySelector("#livePillText"),
+  navIssValue: document.querySelector("#navIssValue"),
+  soundToggle: document.querySelector("#soundToggle"),
+  soundLabel: document.querySelector("#soundLabel"),
+  fullscreenToggle: document.querySelector("#fullscreenToggle"),
+  fullscreenLabel: document.querySelector("#fullscreenLabel"),
+  issUpdated: document.querySelector("#issUpdated"),
+  issLat: document.querySelector("#issLat"),
+  issLon: document.querySelector("#issLon"),
+  issAlt: document.querySelector("#issAlt"),
+  issSpeed: document.querySelector("#issSpeed"),
+  issSun: document.querySelector("#issSun"),
+  issOrbits: document.querySelector("#issOrbits"),
   heroCredit: document.querySelector("#heroCredit"),
   siteNav: document.querySelector("#siteNav"),
   destinationRail: document.querySelector("#destinationRail"),
-  statDestinations: document.querySelector("#statDestinations"),
   selectionKicker: document.querySelector("#selectionKicker"),
   galleryTitle: document.querySelector("#galleryTitle"),
   loadMoreButton: document.querySelector("#loadMoreButton"),
@@ -368,8 +381,6 @@ function writeStoredApiKey(value) {
 }
 
 function initializeDestinationRail() {
-  elements.statDestinations.textContent = String(nodeDefinitions.length);
-
   elements.destinationRail.innerHTML = nodeDefinitions
     .map((node, index) => {
       const divider =
@@ -500,7 +511,7 @@ function computeSolarLayout(width, height, time = 0) {
     y: height * SOLAR_SYSTEM_REFERENCE.y,
   };
   const horizontalPadding = mobile ? 58 : 120;
-  const topPadding = mobile ? 96 : 88;
+  const topPadding = mobile ? 300 : 250;
   const bottomPadding = mobile ? 210 : 176;
   const outerOrbitX = Math.min(
     sun.x - horizontalPadding,
@@ -573,7 +584,7 @@ function computeSolarLayout(width, height, time = 0) {
 function computeLabelLayout(layout, width, height) {
   const mobile = width <= 720;
   const config = mobile ? MAP_LABEL_CONFIG.mobile : MAP_LABEL_CONFIG.desktop;
-  const safeTop = config.padding + 40;
+  const safeTop = mobile ? 230 : 200;
   const safeBottom = config.bottomSafeArea;
   const labelLayouts = new Map();
   const placedRects = [];
@@ -810,7 +821,7 @@ function setSelectedNodeUI(node) {
   elements.selectionKicker.textContent = node.kicker;
   elements.selectionTitle.textContent = node.title;
   elements.selectionDescription.textContent = node.description;
-  elements.galleryTitle.innerHTML = `${escapeHtml(node.title)}, <em>in frames.</em>`;
+  elements.galleryTitle.textContent = node.title;
 
   elements.mapNodes.forEach((mapNode) => {
     mapNode.classList.toggle("is-active", mapNode.dataset.nodeId === node.id);
@@ -973,7 +984,10 @@ function setHeroBackdrop(source, credit) {
 
   image.onload = () => {
     image.classList.add("is-loaded");
-    elements.heroCredit.textContent = credit;
+
+    if (!liveStream.playing) {
+      elements.heroCredit.textContent = credit;
+    }
   };
 
   if (typeof source === "string") {
@@ -1818,8 +1832,283 @@ function drawDeepSpaceBridge(context, layout) {
   context.restore();
 }
 
+/* ---------- Live ISS stream (hero) ---------- */
+
+// NASA's official "Live High-Definition Views from the International Space
+// Station" stream, the same one the ISS HDEV page embeds.
+const ISS_STREAM_ID = "ROboUHfPUrU";
+const PLAYER_ORIGIN = "https://www.youtube-nocookie.com";
+const PLAYER_PLAYING = 1;
+
+const liveStream = {
+  iframe: null,
+  playing: false,
+  muted: true,
+  inView: true,
+};
+
+function initializeLiveStream() {
+  const hero = document.querySelector(".hero");
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  elements.soundToggle.addEventListener("click", toggleStreamSound);
+  elements.fullscreenToggle.addEventListener("click", toggleHeroFullscreen);
+  document.addEventListener("fullscreenchange", syncFullscreenLabel);
+
+  if (document.fullscreenEnabled) {
+    elements.fullscreenToggle.hidden = false;
+  }
+
+  window.addEventListener("message", (event) => {
+    if (!liveStream.iframe || event.source !== liveStream.iframe.contentWindow) {
+      return;
+    }
+
+    let data;
+
+    try {
+      data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+    } catch {
+      return;
+    }
+
+    const state =
+      data?.event === "onStateChange" ? data.info : data?.info?.playerState;
+
+    if (state === PLAYER_PLAYING && !liveStream.playing) {
+      liveStream.playing = true;
+      hero.classList.add("is-live");
+      elements.soundToggle.hidden = false;
+      elements.heroCredit.textContent = "Live: NASA ISS HD Earth views";
+    }
+  });
+
+  // Visitors who prefer reduced motion get a still image and a play button.
+  if (reduceMotion) {
+    elements.soundToggle.hidden = false;
+    elements.soundLabel.textContent = "Play live";
+    elements.soundToggle.addEventListener("click", () => mountStreamPlayer(), { once: true });
+    return;
+  }
+
+  mountStreamPlayer();
+
+  // Save bandwidth and CPU: pause a muted stream while the hero is off screen.
+  new IntersectionObserver(([entry]) => {
+    liveStream.inView = entry.isIntersecting;
+
+    if (!liveStream.muted) {
+      return;
+    }
+
+    streamCommand(entry.isIntersecting ? "playVideo" : "pauseVideo");
+  }, { threshold: 0.05 }).observe(hero);
+}
+
+function mountStreamPlayer() {
+  if (liveStream.iframe) {
+    return;
+  }
+
+  const params = new URLSearchParams({
+    autoplay: "1",
+    mute: "1",
+    controls: "0",
+    playsinline: "1",
+    rel: "0",
+    modestbranding: "1",
+    iv_load_policy: "3",
+    disablekb: "1",
+    enablejsapi: "1",
+    origin: window.location.origin,
+  });
+  const iframe = document.createElement("iframe");
+
+  iframe.src = `${PLAYER_ORIGIN}/embed/${ISS_STREAM_ID}?${params}`;
+  iframe.title = "NASA live view of Earth from the International Space Station";
+  iframe.allow = "autoplay; encrypted-media; picture-in-picture";
+  iframe.tabIndex = -1;
+  iframe.addEventListener("load", () => {
+    // Ask the player to send state events back to this page.
+    iframe.contentWindow?.postMessage(
+      JSON.stringify({ event: "listening", id: 1, channel: "widget" }),
+      PLAYER_ORIGIN,
+    );
+  });
+
+  liveStream.iframe = iframe;
+  elements.heroVideo.append(iframe);
+}
+
+function streamCommand(func, args = []) {
+  liveStream.iframe?.contentWindow?.postMessage(
+    JSON.stringify({ event: "command", func, args }),
+    PLAYER_ORIGIN,
+  );
+}
+
+function toggleStreamSound() {
+  if (!liveStream.iframe) {
+    return;
+  }
+
+  liveStream.muted = !liveStream.muted;
+
+  if (liveStream.muted) {
+    streamCommand("mute");
+
+    if (!liveStream.inView) {
+      streamCommand("pauseVideo");
+    }
+  } else {
+    streamCommand("unMute");
+    streamCommand("setVolume", [100]);
+    streamCommand("playVideo");
+  }
+
+  elements.soundToggle.setAttribute("aria-pressed", String(!liveStream.muted));
+  elements.soundLabel.textContent = liveStream.muted ? "Sound on" : "Sound off";
+}
+
+function toggleHeroFullscreen() {
+  const hero = document.querySelector(".hero");
+
+  if (document.fullscreenElement) {
+    document.exitFullscreen();
+  } else {
+    hero.requestFullscreen?.().catch(() => {});
+  }
+}
+
+function syncFullscreenLabel() {
+  elements.fullscreenLabel.textContent = document.fullscreenElement ? "Exit fullscreen" : "Fullscreen";
+}
+
+/* ---------- ISS tracker ---------- */
+
+const ISS_API = "https://api.wheretheiss.at/v1/satellites/25544";
+const ISS_POLL_MS = 5000;
+const EARTH_RADIUS_KM = 6371;
+const EARTH_MU = 398600.4418; // km^3/s^2
+
+const issTracker = {
+  timer: 0,
+  visible: false,
+  failures: 0,
+};
+
+const ESA_WIDGET_WIDTH = 625;
+
+function initializeIssTracker() {
+  const section = document.querySelector("#iss");
+  const mapFrame = section.querySelector(".iss-map");
+
+  // ESA's widget has a fixed native size; shrink it to fit narrow screens.
+  new ResizeObserver(([entry]) => {
+    const scale = Math.min(1, entry.contentRect.width / ESA_WIDGET_WIDTH);
+    mapFrame.style.setProperty("--iss-scale", String(scale));
+  }).observe(mapFrame);
+
+  refreshHeroDaylight();
+
+  new IntersectionObserver(([entry]) => {
+    issTracker.visible = entry.isIntersecting;
+    scheduleIssPoll(0);
+  }, { rootMargin: "200px" }).observe(section);
+
+  document.addEventListener("visibilitychange", () => scheduleIssPoll(0));
+}
+
+function scheduleIssPoll(delay) {
+  window.clearTimeout(issTracker.timer);
+
+  // Only poll while the tracker is on screen and the tab is visible.
+  if (!issTracker.visible || document.hidden) {
+    return;
+  }
+
+  issTracker.timer = window.setTimeout(pollIss, delay);
+}
+
+async function pollIss() {
+  try {
+    const response = await fetch(ISS_API);
+
+    if (!response.ok) {
+      throw new Error(`ISS position request failed: ${response.status}`);
+    }
+
+    renderIss(await response.json());
+    issTracker.failures = 0;
+  } catch (error) {
+    issTracker.failures += 1;
+    elements.issUpdated.textContent = "Live position temporarily unavailable";
+    console.warn(error);
+  }
+
+  // Back off when the API is struggling.
+  scheduleIssPoll(ISS_POLL_MS * Math.min(2 ** issTracker.failures, 12));
+}
+
+// When the ISS is on the night side the live feed is almost black, so let the
+// still image show through and say so in the pill.
+function setNavIss(position) {
+  const speed = Math.round(Number(position.velocity)).toLocaleString();
+  elements.navIssValue.textContent = `${speed} km/h · ${Math.round(Number(position.altitude))} km`;
+}
+
+function setHeroDaylight(isDaylight) {
+  document.querySelector(".hero").classList.toggle("is-night", !isDaylight);
+  elements.livePillText.textContent = isDaylight ? "Live from the ISS" : "Live from the ISS · night side";
+}
+
+async function refreshHeroDaylight() {
+  if (!document.hidden && !issTracker.visible) {
+    try {
+      const response = await fetch(ISS_API);
+
+      if (response.ok) {
+        const position = await response.json();
+        setHeroDaylight(position.visibility === "daylight");
+  setNavIss(position);
+        setNavIss(position);
+      }
+    } catch {
+      // Non-essential; the hero simply keeps its current look.
+    }
+  }
+
+  window.setTimeout(refreshHeroDaylight, 60000);
+}
+
+function renderIss(position) {
+  const lat = Number(position.latitude);
+  const lon = Number(position.longitude);
+  const altitude = Number(position.altitude);
+  const speed = Number(position.velocity);
+  const radius = EARTH_RADIUS_KM + altitude;
+  const periodSeconds = 2 * Math.PI * Math.sqrt(radius ** 3 / EARTH_MU);
+
+  elements.issLat.textContent = `${Math.abs(lat).toFixed(2)}° ${lat >= 0 ? "N" : "S"}`;
+  elements.issLon.textContent = `${Math.abs(lon).toFixed(2)}° ${lon >= 0 ? "E" : "W"}`;
+  elements.issAlt.textContent = `${Math.round(altitude)} km`;
+  elements.issSpeed.textContent = `${Math.round(speed).toLocaleString()} km/h`;
+  elements.issSun.textContent = position.visibility === "daylight" ? "Daylight" : "Earth's shadow";
+  setHeroDaylight(position.visibility === "daylight");
+  elements.issOrbits.textContent = (86400 / periodSeconds).toFixed(1);
+
+  const time = new Date(Number(position.timestamp) * 1000);
+  elements.issUpdated.textContent = `Updated ${time.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  })}`;
+}
+
 async function bootstrap() {
   initializeNav();
+  initializeLiveStream();
+  initializeIssTracker();
   initializeDestinationRail();
   initializeMapNodes();
   initializeApiKeyForm();

@@ -14,8 +14,9 @@ const contentTypes = {
 };
 
 createServer((request, response) => {
-  const requestPath = request.url === "/" ? "/index.html" : request.url || "/index.html";
-  const filePath = normalize(join(ROOT, decodeURIComponent(requestPath.split("?")[0])));
+  const pathname = (request.url || "/").split("?")[0];
+  const requestPath = pathname === "/" ? "/index.html" : pathname;
+  const filePath = normalize(join(ROOT, decodeURIComponent(requestPath)));
 
   if (!filePath.startsWith(ROOT) || !existsSync(filePath) || statSync(filePath).isDirectory()) {
     response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
