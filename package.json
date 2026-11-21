@@ -8,7 +8,8 @@
     "test": "playwright test",
     "test:live": "playwright test -c playwright.live.config.js",
     "test:ui": "playwright test --ui",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "test:contract": "playwright test tests/contract.spec.js --project=desktop"
   },
   "devDependencies": {
     "@playwright/test": "^1.65.1"
