@@ -25,17 +25,24 @@ Universe Atlas is a single-page, full-screen space explorer built with plain HTM
   <img src="./docs/archive.png" alt="Photo archive: NASA images of Mars in an editorial grid" width="49%" />
 </p>
 
-## Data sources
+## Data sources and freshness
 
-| Source | Used for |
-| --- | --- |
-| [NASA ISS HD Earth views](https://eol.jsc.nasa.gov/esrs/hdev/) (YouTube) | Live video in the hero |
-| [ESA ISS tracker](https://isstracker.spaceflight.esa.int/) | Live ground-track map |
-| [wheretheiss.at](https://wheretheiss.at/) | Live ISS position, altitude, speed and sunlight |
-| [NASA APOD API](https://api.nasa.gov/) | Astronomy Picture of the Day |
-| [NASA Image and Video Library](https://images.nasa.gov/) | Planet and deep-sky photo galleries |
+Everything below is fetched by the visitor's browser at page load; there is no backend and no server-side cache. All endpoints were **last verified on 21 November 2026** with the contract tests (`npm run test:contract`), which also run daily in GitHub Actions.
 
-The image library and ISS sources need no key. APOD uses NASA's shared `DEMO_KEY` by default; visitors can paste their own free key (from [api.nasa.gov](https://api.nasa.gov/)) under the spotlight for reliable access.
+| Source | Endpoint | Refreshed | Cached? |
+| --- | --- | --- | --- |
+| NASA ISS HD Earth views (YouTube) | `youtube-nocookie.com/embed/ROboUHfPUrU` | Live video | No |
+| ESA ISS tracker | `isstracker.spaceflight.esa.int` (embedded widget) | Live, by ESA's own page | No |
+| [wheretheiss.at](https://wheretheiss.at/) v1 | `api.wheretheiss.at/v1/satellites/25544` | Every 5 s while the tracker is on screen; once a minute otherwise, for the header | No |
+| NASA APOD | `api.nasa.gov/planetary/apod` | Once per page load (NASA publishes one image a day) | No |
+| NASA Image and Video Library | `images-api.nasa.gov/search` | On each destination selected and each *Load more* | Browser only: NASA sends `max-age=300` |
+
+What is **not** live:
+- **Planet photos** in `assets/planets/` are NASA images downloaded and cropped once (IDs under Credits). They don't change unless regenerated.
+- **Planet facts and distances** (diameter, day, year, AU) are rounded reference values written into `app.js`, not fetched. Moon counts are deliberately left out because they keep changing.
+- **Orbit positions** are illustrative: correct order, relative distances (compressed) and relative speeds, but not computed from real ephemerides, so a planet's position on screen is not where it is in the sky today.
+
+**Known limitation:** APOD uses NASA's shared `DEMO_KEY`, which is often rate-limited (HTTP 429) or down (5xx). The site then shows one of several high-resolution archive images instead, and visitors can paste their own free key from [api.nasa.gov](https://api.nasa.gov/) under the spotlight.
 
 ## Details worth knowing
 
@@ -63,6 +70,7 @@ npm install
 npx playwright install chromium   # first time only
 npm test                          # tests a local server
 npm run test:live                 # tests the deployed site
+npm run test:contract             # calls the real APIs (CONTRACT=1 required)
 npm run test:ui                   # interactive runner
 npm run test:report               # open the last HTML report
 ```
@@ -78,6 +86,10 @@ GitHub Actions runs the suite on every push and pull request (`.github/workflows
 | `solar-system.spec.js` | Planet order and distances, textures, relative speeds, click-to-zoom, zoom-out controls, facts, frame rate |
 | `gallery.spec.js` | Relevance filtering, de-duplication, Load more, full-size viewer with arrow keys |
 | `images.spec.js` | No photo drawn larger than its file allows; every planet texture exists |
+| `dev-server.spec.js` | Local server rejects paths outside the project and survives malformed URLs |
+| `contract.spec.js` | **Real** NASA, wheretheiss.at, YouTube and ESA endpoints still answer with the fields the site uses (not mocked; daily in CI) |
+
+The mocked tests prove the UI handles each response correctly; the contract tests prove the real services still send those responses.
 
 ## Deploy
 
@@ -110,6 +122,25 @@ To refresh the screenshots, run the local server and then:
 ```bash
 node capture-preview.mjs http://127.0.0.1:3000 preview.png "#atlas"
 ```
+
+## What I learned building this
+
+**Live data is never as clean as the docs.**
+- NASA's ISS camera feed is dark for about a third of every 92-minute orbit and sometimes shows a "loss of signal" card. YouTube gives the embedding page no way to detect that card, so I couldn't hide it. I made the headline readable over anything instead, and labelled the night side rather than masking it.
+- APOD's shared `DEMO_KEY` regularly returns 429 or 500. Every API call has a fallback path, and the contract test treats those statuses as warnings, not failures.
+
+**Bugs I hit and fixed:**
+- *A filter that dropped half the Earth photos.* Images were excluded if their text contained "iss" (to skip station interiors). As a substring that matched every "m**iss**ion". I switched to whole-word matching.
+- *Blurry photos on good screens.* Some NASA results only exist as small thumbnails, and they were stretched 3–4× into large tiles. I now build `srcset` from the width NASA reports for each rendition, drop images under 640 px, and reserve the large tiles for high-resolution sources. A test fails if any photo is drawn larger than its file.
+- *A deploy that looked broken for returning visitors.* A one-hour CSS/JS cache meant a new HTML page could load with old styles. I fixed it with `Cache-Control: no-cache` plus versioned asset URLs.
+- *A fix that caused a regression.* Stopping the orbits from jumping on every selection (#1) made them run behind the info card on desktop (#12), because the space was then measured once, before the card's facts rendered. The fix and a test for each case are in #9 and #16.
+- *A third-party widget that can't be resized.* ESA's tracker renders at a fixed 625 px and leaves white edges when stretched. It's shown at native size and only ever scaled down, so it stays sharp.
+
+**How I handle errors:**
+- **The page never depends on one service.** APOD falls back to curated archive images, the hero falls back to a still image if the stream fails or ends, and the gallery shows a clear message.
+- **Polling backs off.** The ISS tracker doubles its delay after each failure (capped at 60 s) and stops entirely while it's off screen or the tab is hidden.
+- **Untrusted input is validated.** APOD video URLs must be `http(s)`, and all API text is escaped before it reaches the page.
+- **Problems become issues.** A daily GitHub Action tests the live site and the real APIs, and opens an issue when either fails. Code reviews file their findings as issues and fix them in pull requests.
 
 ## Credits
 
