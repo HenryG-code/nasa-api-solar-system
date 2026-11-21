@@ -713,6 +713,12 @@ h3 {
   transform-origin: 0 0;
 }
 
+/* Background reload: the fresh copy loads invisibly behind the current map. */
+.iss-map iframe.is-preloading {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .iss-telemetry {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

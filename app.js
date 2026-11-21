@@ -2326,6 +2326,53 @@ const issTracker = {
 
 const ESA_WIDGET_WIDTH = 625;
 
+// ESA's widget sometimes stalls on its splash screen while it fetches orbit
+// data. The page can't see inside it (another origin), so 30 s after the map
+// comes into view it is reloaded once, in the background: a fresh copy loads
+// invisibly behind the current one and is swapped in only after it loads.
+const ESA_RELOAD_DELAY_MS = 30_000;
+const ESA_SWAP_SETTLE_MS = 4_000;
+
+function scheduleEsaMapReload(mapFrame) {
+  if (issTracker.esaReloadScheduled) {
+    return;
+  }
+
+  issTracker.esaReloadScheduled = true;
+  window.setTimeout(() => reloadEsaMap(mapFrame), ESA_RELOAD_DELAY_MS);
+}
+
+function reloadEsaMap(mapFrame) {
+  const current = mapFrame.querySelector("iframe");
+
+  if (!current) {
+    return;
+  }
+
+  const fresh = current.cloneNode(false);
+  fresh.removeAttribute("loading");
+  fresh.classList.add("is-preloading");
+  fresh.setAttribute("aria-hidden", "true");
+  fresh.tabIndex = -1;
+
+  fresh.addEventListener(
+    "load",
+    () => {
+      // Give the widget time to draw its map before swapping it in.
+      window.setTimeout(() => {
+        fresh.classList.remove("is-preloading");
+        fresh.removeAttribute("aria-hidden");
+        fresh.removeAttribute("tabindex");
+        current.remove();
+        mapFrame.dataset.reloaded = "true";
+      }, ESA_SWAP_SETTLE_MS);
+    },
+    { once: true },
+  );
+
+  mapFrame.append(fresh);
+}
+
 function initializeIssTracker() {
   const section = document.querySelector("#iss");
   const mapFrame = section.querySelector(".iss-map");
@@ -2341,6 +2388,10 @@ function initializeIssTracker() {
   new IntersectionObserver(([entry]) => {
     issTracker.visible = entry.isIntersecting;
     scheduleIssPoll(0);
+
+    if (entry.isIntersecting) {
+      scheduleEsaMapReload(mapFrame);
+    }
   }, { rootMargin: "200px" }).observe(section);
 
   document.addEventListener("visibilitychange", () => scheduleIssPoll(0));
