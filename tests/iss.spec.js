@@ -38,6 +38,34 @@ test.describe("ISS tracker", () => {
     await expect.poll(() => calls, { timeout: 8000 }).toBeGreaterThan(1);
   });
 
+  test("ESA map reloads once in the background 30 s after it comes into view", async ({ page }) => {
+    await page.clock.install();
+    await page.goto("/");
+    await page.locator("#iss").scrollIntoViewIfNeeded();
+    const map = page.locator(".iss-map");
+    await expect(map.locator("iframe")).toHaveCount(1);
+
+    // Before 30 s nothing happens.
+    await page.clock.fastForward(25_000);
+    await expect(map.locator("iframe")).toHaveCount(1);
+
+    // At 30 s a hidden copy starts loading behind the visible map.
+    await page.clock.fastForward(6_000);
+    await expect(map.locator("iframe")).toHaveCount(2);
+    await expect(map.locator("iframe.is-preloading")).toBeHidden();
+    await expect(map.locator("iframe:not(.is-preloading)")).toBeVisible();
+
+    // Once loaded and settled, it replaces the old one: still exactly one map.
+    await page.clock.fastForward(5_000);
+    await expect(map).toHaveAttribute("data-reloaded", "true");
+    await expect(map.locator("iframe")).toHaveCount(1);
+    await expect(map.locator("iframe")).toBeVisible();
+
+    // Only once.
+    await page.clock.fastForward(60_000);
+    await expect(map.locator("iframe")).toHaveCount(1);
+  });
+
   test("ESA map renders at native size and only ever scales down", async ({ page }) => {
     await page.goto("/");
     await page.locator("#iss").scrollIntoViewIfNeeded();
